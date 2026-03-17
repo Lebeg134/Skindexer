@@ -1,0 +1,12 @@
+namespace Skindexer.Contracts.Models;
+
+public class SkinPrice
+{
+    public Guid ItemId { get; init; }
+    public string Source { get; init; } = default!;
+    public string PriceType { get; init; } = default!;
+    public decimal Price { get; init; }
+    public string Currency { get; init; } = default!;
+    public int? Volume { get; init; }
+    public DateTime RecordedAt { get; init; }
+}
