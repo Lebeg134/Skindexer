@@ -14,5 +14,11 @@ public class SkinItemEntity
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 
+    public Guid? CollectionId { get; set; }
+    public CollectionEntity? Collection { get; set; }
+
+    public Guid? GradeId { get; set; }
+    public GradeEntity? Grade { get; set; }
+
     public ICollection<SkinPriceEntity> Prices { get; set; } = [];
 }

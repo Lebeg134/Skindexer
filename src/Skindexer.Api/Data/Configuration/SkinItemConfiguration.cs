@@ -36,6 +36,9 @@ public class SkinItemConfiguration : IEntityTypeConfiguration<SkinItemEntity>
         builder.Property(x => x.UpdatedAt)
             .IsRequired();
 
+        builder.Property(x => x.CollectionId);
+        builder.Property(x => x.GradeId);
+
         builder.HasIndex(x => x.Slug)
             .IsUnique();
 
@@ -44,5 +47,15 @@ public class SkinItemConfiguration : IEntityTypeConfiguration<SkinItemEntity>
         builder.HasMany(x => x.Prices)
             .WithOne(x => x.Item)
             .HasForeignKey(x => x.ItemId);
+
+        builder.HasOne(x => x.Collection)
+            .WithMany(x => x.Items)
+            .HasForeignKey(x => x.CollectionId)
+            .IsRequired(false);
+
+        builder.HasOne(x => x.Grade)
+            .WithMany(x => x.Items)
+            .HasForeignKey(x => x.GradeId)
+            .IsRequired(false);
     }
 }

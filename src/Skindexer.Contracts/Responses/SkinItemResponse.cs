@@ -9,4 +9,5 @@ public class SkinItemResponse
     public bool IsTradeable { get; init; }
     public bool IsMarketable { get; init; }
     public Dictionary<string, object?> Metadata { get; init; } = [];
+    public DateTime? AddedToGameAt { get; set; }
 }

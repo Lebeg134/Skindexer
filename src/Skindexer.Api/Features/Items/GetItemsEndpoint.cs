@@ -17,7 +17,8 @@ public static class GetItemsEndpoint
                 ImageUrl = i.ImageUrl,
                 IsTradeable = i.IsTradeable,
                 IsMarketable = i.IsMarketable,
-                Metadata = i.Metadata
+                Metadata = i.Metadata,
+                AddedToGameAt = i.AddedToGameAt
             }));
         });
     }
