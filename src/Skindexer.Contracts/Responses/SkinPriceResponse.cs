@@ -1,6 +1,6 @@
-namespace Skindexer.Contracts.Models;
+namespace Skindexer.Contracts.Responses;
 
-public class SkinPrice
+public class SkinPriceResponse
 {
     public Guid ItemId { get; init; }
     public string Slug { get; init; } = default!;

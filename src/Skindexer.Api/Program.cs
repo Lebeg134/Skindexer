@@ -1,4 +1,8 @@
 using Scalar.AspNetCore;
+using Skindexer.Api.Features.Collections;
+using Skindexer.Api.Features.Grades;
+using Skindexer.Api.Features.Items;
+using Skindexer.Api.Features.Prices;
 using Skindexer.Fetchers;
 using Skindexer.Scheduler;
 
@@ -9,6 +13,7 @@ builder.Services.AddSkindexerFetchers();
 builder.Services.AddHostedService<FetchScheduler>();
 
 // TODO: add DbContext registration once EF migrations are set up
+// TODO: register repository implementations once EF layer is built
 
 var app = builder.Build();
 
@@ -20,8 +25,10 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// Feature endpoints are registered here as we build them
-// e.g. app.MapPriceEndpoints();
+GetItemsEndpoint.MapEndpoint(app);
+GetPricesEndpoint.MapEndpoint(app);
+GetCollectionsEndpoint.MapEndpoint(app);
+GetGradesEndpoint.MapEndpoint(app);
 
 // Log full registry overview at startup — one place to see everything registered
 var registry = app.Services.GetRequiredService<FetcherRegistry>();
