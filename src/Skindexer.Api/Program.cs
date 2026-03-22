@@ -1,4 +1,6 @@
+using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
+using Skindexer.Api.Data;
 using Skindexer.Api.Features.Collections;
 using Skindexer.Api.Features.Grades;
 using Skindexer.Api.Features.Items;
@@ -12,7 +14,10 @@ builder.Services.AddOpenApi();
 builder.Services.AddSkindexerFetchers();
 builder.Services.AddHostedService<FetchScheduler>();
 
-// TODO: add DbContext registration once EF migrations are set up
+
+builder.Services.AddDbContext<SkindexerDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
+
 // TODO: register repository implementations once EF layer is built
 
 var app = builder.Build();
