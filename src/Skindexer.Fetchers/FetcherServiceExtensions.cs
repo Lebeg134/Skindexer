@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
-using Skindexer.Fetchers.Games.CS2;
+using Skindexer.Fetchers.Games.CS2.Fetchers;
+using Skindexer.Fetchers.Games.CS2.Mappers;
 using Skindexer.Fetchers.Games.Rust;
 using Skindexer.Fetchers.Interfaces;
 
@@ -9,15 +10,19 @@ public static class FetcherServiceExtensions
 {
     public static IServiceCollection AddSkindexerFetchers(this IServiceCollection services)
     {
-        // Register each fetcher as IGameFetcher
-        // Adding a new game = adding one line here
-        services.AddHttpClient<CS2Fetcher>();
+        // TODO: extract to Skindexer.Game.CS2 package
+        // CS2
+        services.AddHttpClient<CS2ByMykelItemFetcher>();
+        services.AddSingleton<IGameFetcher, CS2ByMykelItemFetcher>();
+        services.AddSingleton<CS2ByMykelSkinMapper>();
+        services.AddSingleton<CS2ByMykelCollectibleMapper>();
+        services.AddSingleton<CS2ByMykelPatchMapper>();
+        services.AddSingleton<CS2ByMykelMusicKitMapper>();
+
+        // Rust
         services.AddHttpClient<RustFetcher>();
-
-        services.AddSingleton<IGameFetcher, CS2Fetcher>();
         services.AddSingleton<IGameFetcher, RustFetcher>();
-
-        // Registry gets all IGameFetcher implementations injected automatically
+        
         services.AddSingleton<FetcherRegistry>();
 
         return services;
