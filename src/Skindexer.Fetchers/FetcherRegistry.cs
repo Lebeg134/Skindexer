@@ -8,7 +8,7 @@ public class FetcherRegistry
  
     public FetcherRegistry(IEnumerable<IGameFetcher> fetchers)
     {
-        _fetchers = fetchers.ToDictionary(f => f.GameId, StringComparer.OrdinalIgnoreCase);
+        _fetchers = fetchers.ToDictionary(f => f.FetcherId, StringComparer.OrdinalIgnoreCase);
     }
  
     /// <summary>All registered fetchers regardless of trigger type.</summary>

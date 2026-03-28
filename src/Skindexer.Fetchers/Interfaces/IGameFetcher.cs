@@ -16,11 +16,9 @@ namespace Skindexer.Fetchers.Interfaces;
 public interface IGameFetcher
 {
     /// <summary>
-    /// Unique identifier for this game. Lowercase, no spaces. e.g. "cs2", "rust"
-    /// Used as game_id in the database, API responses, and slugs.
-    /// Must be stable — changing this after data exists will break lookups.
+    /// Unique identifier for this fetcher. Lowercase, no spaces. e.g. "cs2-my-fetcher", "rust-manual"
     /// </summary>
-    string GameId { get; }
+    string FetcherId { get; }
  
     /// <summary>
     /// Human-readable name shown in API responses and logs.

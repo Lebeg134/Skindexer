@@ -13,8 +13,8 @@ using Skindexer.Api.Data;
 namespace Skindexer.Api.Migrations
 {
     [DbContext(typeof(SkindexerDbContext))]
-    [Migration("20260322175409_AddCollectionsAndGrades")]
-    partial class AddCollectionsAndGrades
+    [Migration("20260323114115_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -30,27 +30,33 @@ namespace Skindexer.Api.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<string>("GameId")
                         .IsRequired()
                         .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("game_id");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("name");
 
                     b.Property<string>("Slug")
                         .IsRequired()
                         .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("slug");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_collections");
 
                     b.HasIndex("GameId", "Slug")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_collections_game_id_slug");
 
                     b.ToTable("collections", (string)null);
                 });
@@ -59,33 +65,41 @@ namespace Skindexer.Api.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<string>("GameId")
                         .IsRequired()
                         .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("game_id");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("name");
 
                     b.Property<int>("Order")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("order");
 
                     b.Property<string>("Slug")
                         .IsRequired()
                         .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("slug");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_grades");
 
                     b.HasIndex("GameId", "Order")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_grades_game_id_order");
 
                     b.HasIndex("GameId", "Slug")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_grades_game_id_slug");
 
                     b.ToTable("grades", (string)null);
                 });
@@ -94,62 +108,77 @@ namespace Skindexer.Api.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<DateTime?>("AddedToGameAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("added_to_game_at");
 
                     b.Property<Guid?>("CollectionId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("collection_id");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
 
                     b.Property<string>("GameId")
                         .IsRequired()
                         .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("game_id");
 
                     b.Property<Guid?>("GradeId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("grade_id");
 
                     b.Property<string>("ImageUrl")
                         .HasMaxLength(1024)
-                        .HasColumnType("character varying(1024)");
+                        .HasColumnType("character varying(1024)")
+                        .HasColumnName("image_url");
 
                     b.Property<bool>("IsMarketable")
-                        .HasColumnType("boolean");
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_marketable");
 
                     b.Property<bool>("IsTradeable")
-                        .HasColumnType("boolean");
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_tradeable");
 
                     b.Property<Dictionary<string, object>>("Metadata")
                         .IsRequired()
-                        .HasColumnType("jsonb");
+                        .HasColumnType("jsonb")
+                        .HasColumnName("metadata");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("name");
 
                     b.Property<string>("Slug")
                         .IsRequired()
                         .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("slug");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_items");
 
-                    b.HasIndex("CollectionId");
+                    b.HasIndex("CollectionId")
+                        .HasDatabaseName("ix_items_collection_id");
 
-                    b.HasIndex("GameId");
+                    b.HasIndex("GradeId")
+                        .HasDatabaseName("ix_items_grade_id");
 
-                    b.HasIndex("GradeId");
-
-                    b.HasIndex("Slug")
-                        .IsUnique();
+                    b.HasIndex("GameId", "Slug")
+                        .IsUnique()
+                        .HasDatabaseName("ix_items_game_id_slug");
 
                     b.ToTable("items", (string)null);
                 });
@@ -158,44 +187,55 @@ namespace Skindexer.Api.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<string>("Currency")
                         .IsRequired()
                         .HasMaxLength(16)
-                        .HasColumnType("character varying(16)");
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("currency");
 
                     b.Property<Guid>("ItemId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("item_id");
 
                     b.Property<decimal>("Price")
                         .HasPrecision(18, 8)
-                        .HasColumnType("numeric(18,8)");
+                        .HasColumnType("numeric(18,8)")
+                        .HasColumnName("price");
 
                     b.Property<string>("PriceType")
                         .IsRequired()
                         .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("price_type");
 
                     b.Property<DateTime>("RecordedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("recorded_at");
 
                     b.Property<string>("Slug")
                         .IsRequired()
                         .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("slug");
 
                     b.Property<string>("Source")
                         .IsRequired()
                         .HasMaxLength(128)
-                        .HasColumnType("character varying(128)");
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("source");
 
                     b.Property<int?>("Volume")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("volume");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_price_snapshots");
 
-                    b.HasIndex("ItemId", "RecordedAt");
+                    b.HasIndex("ItemId", "RecordedAt")
+                        .HasDatabaseName("ix_price_snapshots_item_id_recorded_at");
 
                     b.ToTable("price_snapshots", (string)null);
                 });
@@ -204,11 +244,13 @@ namespace Skindexer.Api.Migrations
                 {
                     b.HasOne("Skindexer.Api.Data.Entities.CollectionEntity", "Collection")
                         .WithMany("Items")
-                        .HasForeignKey("CollectionId");
+                        .HasForeignKey("CollectionId")
+                        .HasConstraintName("fk_items_collections_collection_id");
 
                     b.HasOne("Skindexer.Api.Data.Entities.GradeEntity", "Grade")
                         .WithMany("Items")
-                        .HasForeignKey("GradeId");
+                        .HasForeignKey("GradeId")
+                        .HasConstraintName("fk_items_grades_grade_id");
 
                     b.Navigation("Collection");
 
@@ -221,7 +263,8 @@ namespace Skindexer.Api.Migrations
                         .WithMany("Prices")
                         .HasForeignKey("ItemId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_price_snapshots_items_item_id");
 
                     b.Navigation("Item");
                 });

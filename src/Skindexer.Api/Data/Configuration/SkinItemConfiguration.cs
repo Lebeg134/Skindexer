@@ -39,10 +39,8 @@ public class SkinItemConfiguration : IEntityTypeConfiguration<SkinItemEntity>
         builder.Property(x => x.CollectionId);
         builder.Property(x => x.GradeId);
 
-        builder.HasIndex(x => x.Slug)
+        builder.HasIndex(x => new { x.GameId, x.Slug })
             .IsUnique();
-
-        builder.HasIndex(x => x.GameId);
 
         builder.HasMany(x => x.Prices)
             .WithOne(x => x.Item)

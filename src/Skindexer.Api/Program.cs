@@ -2,27 +2,34 @@ using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
 using Skindexer.Api.Data;
 using Skindexer.Api.Data.Repositories;
+using Skindexer.Api.Features;
 using Skindexer.Api.Features.Collections;
 using Skindexer.Api.Features.Grades;
 using Skindexer.Api.Features.Items;
 using Skindexer.Api.Features.Prices;
 using Skindexer.Fetchers;
+using Skindexer.Fetchers.Interfaces;
 using Skindexer.Scheduler;
 
 var builder = WebApplication.CreateBuilder(args);
+var services = builder.Services;
 
-builder.Services.AddOpenApi();
-builder.Services.AddSkindexerFetchers();
-builder.Services.AddHostedService<FetchScheduler>();
+services.AddOpenApi();
+services.AddSkindexerFetchers();
+services.AddHostedService<FetchScheduler>();
 
 
-builder.Services.AddDbContext<SkindexerDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
+var connectionString = builder.Configuration.GetConnectionString("Default")!;
+services.AddDbContext<SkindexerDbContext>(options =>
+    options.UseNpgsql(connectionString)
+        .UseSnakeCaseNamingConvention());
 
-builder.Services.AddScoped<IItemRepository, ItemRepository>();
-builder.Services.AddScoped<IPriceRepository, PriceRepository>();
-builder.Services.AddScoped<ICollectionRepository, CollectionRepository>();
-builder.Services.AddScoped<IGradeRepository, GradeRepository>();
+services.AddScoped<IItemRepository, ItemRepository>();
+services.AddScoped<IPriceRepository, PriceRepository>();
+services.AddScoped<ICollectionRepository, CollectionRepository>();
+services.AddScoped<IGradeRepository, GradeRepository>();
+
+services.AddScoped<IFetchResultPersister, FetchResultPersister>();
 
 var app = builder.Build();
 
@@ -44,8 +51,8 @@ var logger = app.Services.GetRequiredService<ILogger<Program>>();
 
 logger.LogInformation(
     "Skindexer started. Scheduled: [{Scheduled}] | Manual: [{Manual}] | File: [{File}]",
-    string.Join(", ", registry.Scheduled.Select(f => f.GameId)),
-    string.Join(", ", registry.Manual.Select(f => f.GameId)),
-    string.Join(", ", registry.FileBased.Select(f => f.GameId)));
+    string.Join(", ", registry.Scheduled.Select(f => f.FetcherId)),
+    string.Join(", ", registry.Manual.Select(f => f.FetcherId)),
+    string.Join(", ", registry.FileBased.Select(f => f.FetcherId)));
 
 app.Run();

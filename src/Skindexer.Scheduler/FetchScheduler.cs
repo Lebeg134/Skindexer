@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Skindexer.Fetchers;
@@ -8,14 +9,19 @@ namespace Skindexer.Scheduler;
 public class FetchScheduler : BackgroundService
 {
     private readonly FetcherRegistry _registry;
+    private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<FetchScheduler> _logger;
 
-    // Tracks when each scheduled fetcher last ran, keyed by GameId
+    // Tracks when each scheduled fetcher last ran, keyed by FetcherId
     private readonly Dictionary<string, DateTime> _lastRun = new();
 
-    public FetchScheduler(FetcherRegistry registry, ILogger<FetchScheduler> logger)
+    public FetchScheduler(
+        FetcherRegistry registry,
+        IServiceScopeFactory scopeFactory,
+        ILogger<FetchScheduler> logger)
     {
         _registry = registry;
+        _scopeFactory = scopeFactory;
         _logger = logger;
     }
 
@@ -23,7 +29,7 @@ public class FetchScheduler : BackgroundService
     {
         _logger.LogInformation(
             "FetchScheduler started. Scheduled fetchers: [{Scheduled}]",
-            string.Join(", ", _registry.Scheduled.Select(f => f.GameId)));
+            string.Join(", ", _registry.Scheduled.Select(f => f.FetcherId)));
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -31,14 +37,14 @@ public class FetchScheduler : BackgroundService
 
             foreach (var fetcher in _registry.Scheduled)
             {
-                var isDue = !_lastRun.TryGetValue(fetcher.GameId, out var last)
+                var isDue = !_lastRun.TryGetValue(fetcher.FetcherId, out var last)
                     || (now - last) >= fetcher.PollingInterval;
 
                 if (!isDue) continue;
 
                 // Fire and forget per fetcher — one failing doesn't block others
                 _ = RunFetcherAsync(fetcher, stoppingToken);
-                _lastRun[fetcher.GameId] = now;
+                _lastRun[fetcher.FetcherId] = now;
             }
 
             // Check every 30 seconds whether any fetcher is due
@@ -50,25 +56,29 @@ public class FetchScheduler : BackgroundService
     // TODO: expose publicly so the API can call this for IManualFetcher triggers
     internal async Task RunFetcherAsync(IGameFetcher fetcher, CancellationToken ct)
     {
-        _logger.LogInformation("Running fetcher for {Game}", fetcher.DisplayName);
+        _logger.LogInformation("Running fetcher {FetcherId}", fetcher.FetcherId);
 
         var result = await fetcher.FetchAsync(ct);
 
         if (!result.IsSuccess)
         {
-            _logger.LogWarning("Fetcher for {Game} failed: {Error}",
-                fetcher.DisplayName, result.ErrorMessage);
+            _logger.LogWarning("Fetcher {FetcherId} failed: {Error}",
+                fetcher.FetcherId, result.ErrorMessage);
             return;
         }
 
         if (result.Warnings.Any())
-            _logger.LogWarning("Fetcher for {Game} completed with warnings: {Warnings}",
-                fetcher.DisplayName, string.Join(", ", result.Warnings));
+            _logger.LogWarning("Fetcher {FetcherId} completed with warnings: {Warnings}",
+                fetcher.FetcherId, string.Join(", ", result.Warnings));
+
+        // Create a fresh scope per fetch run — persister wraps DbContext, which is scoped
+        await using var scope = _scopeFactory.CreateAsyncScope();
+        var persister = scope.ServiceProvider.GetRequiredService<IFetchResultPersister>();
+
+        await persister.PersistAsync(result, ct);
 
         _logger.LogInformation(
-            "Fetcher for {Game} completed. Items: {ItemCount}, Prices: {PriceCount}",
-            fetcher.DisplayName, result.Items.Count, result.Prices.Count);
-
-        // TODO: persist result.Items and result.Prices to PostgreSQL
+            "Fetcher {FetcherId} completed. Items: {ItemCount}, Prices: {PriceCount}",
+            fetcher.FetcherId, result.Items.Count, result.Prices.Count);
     }
 }

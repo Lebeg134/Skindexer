@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Skindexer.Api.Data.Entities;
 using Skindexer.Api.Features.Prices;
 using Skindexer.Contracts.Models;
 
@@ -21,15 +22,40 @@ public class PriceRepository : IPriceRepository
             .Select(g => g.OrderByDescending(p => p.RecordedAt).First())
             .Select(p => new SkinPrice
             {
-                ItemId = p.ItemId,
-                Slug = p.Slug,
-                Source = p.Source,
-                PriceType = p.PriceType,
-                Price = p.Price,
-                Currency = p.Currency,
-                Volume = p.Volume,
+                ItemId     = p.ItemId,
+                Slug       = p.Slug,
+                Source     = p.Source,
+                PriceType  = p.PriceType,
+                Price      = p.Price,
+                Currency   = p.Currency,
+                Volume     = p.Volume,
                 RecordedAt = p.RecordedAt
             })
             .ToListAsync(ct);
+    }
+
+    public async Task InsertPricesAsync(IReadOnlyList<SkinPrice> prices, CancellationToken ct = default)
+    {
+        if (prices.Count == 0) return;
+
+        // Batch in chunks of 500 to keep SaveChanges calls manageable
+        foreach (var batch in prices.Chunk(500))
+        {
+            var entities = batch.Select(p => new SkinPriceEntity
+            {
+                Id         = Guid.NewGuid(),
+                ItemId     = p.ItemId,
+                Slug       = p.Slug,
+                Source     = p.Source,
+                PriceType  = p.PriceType,
+                Price      = p.Price,
+                Currency   = p.Currency,
+                Volume     = p.Volume,
+                RecordedAt = p.RecordedAt,
+            });
+
+            await _db.Prices.AddRangeAsync(entities, ct);
+            await _db.SaveChangesAsync(ct);
+        }
     }
 }

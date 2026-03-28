@@ -9,7 +9,7 @@ public class CS2Fetcher : IScheduledFetcher
     private readonly HttpClient _http;
     private readonly ILogger<CS2Fetcher> _logger;
 
-    public string GameId => "cs2";
+    public string FetcherId => "cs2";
     public string DisplayName => "Counter-Strike 2";
     public TimeSpan PollingInterval => TimeSpan.FromMinutes(5);
 
@@ -30,12 +30,12 @@ public class CS2Fetcher : IScheduledFetcher
             var items = new List<SkinItem>();
             var prices = new List<SkinPrice>();
 
-            return FetchResult.Success(GameId, "steam_market", items, prices);
+            return FetchResult.Success(FetcherId, "steam_market", items, prices);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to fetch CS2 prices");
-            return FetchResult.Failure(GameId, "steam_market", ex.Message);
+            return FetchResult.Failure(FetcherId, "steam_market", ex.Message);
         }
     }
 }
