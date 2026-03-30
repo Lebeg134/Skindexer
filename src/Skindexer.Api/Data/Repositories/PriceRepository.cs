@@ -24,21 +24,18 @@ public class PriceRepository : IPriceRepository
     public async Task<IReadOnlyList<SkinPrice>> GetCurrentPricesByGameAsync(string gameId,
         CancellationToken ct = default)
     {
-        return await _db.Prices
-            .Where(p => p.Item.GameId == gameId)
-            .GroupBy(p => new { p.ItemId, p.Slug, p.Source, p.PriceType })
-            .Select(g => g.OrderByDescending(p => p.RecordedAt).First())
-            .Select(p => new SkinPrice
-            {
-                ItemId = p.ItemId,
-                Slug = p.Slug,
-                Source = p.Source,
-                PriceType = p.PriceType,
-                Price = p.Price,
-                Currency = p.Currency,
-                Volume = p.Volume,
-                RecordedAt = p.RecordedAt
-            })
+        var sql = """
+                  SELECT DISTINCT ON (p.item_id, p.slug, p.source, p.price_type)
+                      p.item_id, p.slug, p.source, p.price_type,
+                      p.price, p.currency, p.volume, p.recorded_at
+                  FROM price_snapshots p
+                  INNER JOIN items i ON i.id = p.item_id
+                  WHERE i.game_id = {0}
+                  ORDER BY p.item_id, p.slug, p.source, p.price_type, p.recorded_at DESC
+                  """;
+
+        return await _db.Database
+            .SqlQueryRaw<SkinPrice>(sql, gameId)
             .ToListAsync(ct);
     }
 

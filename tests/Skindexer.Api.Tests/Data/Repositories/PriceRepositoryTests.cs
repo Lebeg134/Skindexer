@@ -1,4 +1,3 @@
-
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Npgsql;
@@ -26,7 +25,7 @@ public class PriceRepositoryTests : IAsyncLifetime
     public async Task InitializeAsync()
     {
         await _postgres.StartAsync();
-        
+
         _dataSource = new NpgsqlDataSourceBuilder(_postgres.GetConnectionString())
             .EnableDynamicJson()
             .Build();
@@ -77,17 +76,117 @@ public class PriceRepositoryTests : IAsyncLifetime
         string slug,
         decimal price = 10m,
         int? volume = 100,
+        string source = "kaggle-steam",
         DateTime? recordedAt = null) => new()
     {
         ItemId = itemId,
         Slug = slug,
-        Source = "kaggle-steam",
+        Source = source,
         PriceType = "median_daily",
         Price = price,
         Currency = "USD",
         Volume = volume,
         RecordedAt = recordedAt ?? new DateTime(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc),
     };
+
+    #endregion
+
+    #region GetCurrentPricesByGameAsync
+
+    [Fact]
+    public async Task GetCurrentPricesByGameAsync_NoItems_ReturnsEmpty()
+    {
+        var result = await _repository.GetCurrentPricesByGameAsync("cs2", CancellationToken.None);
+
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public async Task GetCurrentPricesByGameAsync_ReturnsOnlyMostRecentSnapshot()
+    {
+        var item = await SeedItemAsync();
+
+        var prices = new List<SkinPrice>
+        {
+            BuildPrice(item.Id, item.Slug, price: 10m, recordedAt: new DateTime(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc)),
+            BuildPrice(item.Id, item.Slug, price: 11m, recordedAt: new DateTime(2021, 1, 2, 0, 0, 0, DateTimeKind.Utc)),
+            BuildPrice(item.Id, item.Slug, price: 12m, recordedAt: new DateTime(2021, 1, 3, 0, 0, 0, DateTimeKind.Utc)),
+        };
+
+        await _repository.InsertPricesAsync(prices, CancellationToken.None);
+
+        var result = await _repository.GetCurrentPricesByGameAsync("cs2", CancellationToken.None);
+
+        Assert.Single(result);
+        Assert.Equal(12m, result[0].Price);
+    }
+
+    [Fact]
+    public async Task GetCurrentPricesByGameAsync_MultipleItems_ReturnsMostRecentPerItem()
+    {
+        var item1 = await SeedItemAsync(slug: "ak-47-redline");
+        var item2 = await SeedItemAsync(slug: "m4a4-howl");
+
+        var prices = new List<SkinPrice>
+        {
+            BuildPrice(item1.Id, item1.Slug, price: 10m,
+                recordedAt: new DateTime(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc)),
+            BuildPrice(item1.Id, item1.Slug, price: 15m,
+                recordedAt: new DateTime(2021, 1, 2, 0, 0, 0, DateTimeKind.Utc)),
+            BuildPrice(item2.Id, item2.Slug, price: 500m,
+                recordedAt: new DateTime(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc)),
+            BuildPrice(item2.Id, item2.Slug, price: 550m,
+                recordedAt: new DateTime(2021, 1, 2, 0, 0, 0, DateTimeKind.Utc)),
+        };
+
+        await _repository.InsertPricesAsync(prices, CancellationToken.None);
+
+        var result = await _repository.GetCurrentPricesByGameAsync("cs2", CancellationToken.None);
+
+        Assert.Equal(2, result.Count);
+        Assert.Contains(result, p => p.ItemId == item1.Id && p.Price == 15m);
+        Assert.Contains(result, p => p.ItemId == item2.Id && p.Price == 550m);
+    }
+
+    [Fact]
+    public async Task GetCurrentPricesByGameAsync_MultipleSources_ReturnsMostRecentPerSource()
+    {
+        var item = await SeedItemAsync();
+
+        var prices = new List<SkinPrice>
+        {
+            BuildPrice(item.Id, item.Slug, price: 10m, recordedAt: new DateTime(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc)),
+            BuildPrice(item.Id, item.Slug, price: 11m, recordedAt: new DateTime(2021, 1, 2, 0, 0, 0, DateTimeKind.Utc), source: "steam-market"),
+        };
+
+        await _repository.InsertPricesAsync(prices, CancellationToken.None);
+
+        var result = await _repository.GetCurrentPricesByGameAsync("cs2", CancellationToken.None);
+
+        Assert.Equal(2, result.Count);
+        Assert.Contains(result, p => p.Source == "kaggle-steam" && p.Price == 10m);
+        Assert.Contains(result, p => p.Source == "steam-market" && p.Price == 11m);
+    }
+
+    [Fact]
+    public async Task GetCurrentPricesByGameAsync_FiltersByGameId()
+    {
+        var cs2Item = await SeedItemAsync(slug: "ak-47-redline", gameId: "cs2");
+        var tf2Item = await SeedItemAsync(slug: "ak-47-redline", gameId: "tf2");
+
+        var prices = new List<SkinPrice>
+        {
+            BuildPrice(cs2Item.Id, cs2Item.Slug, price: 10m),
+            BuildPrice(tf2Item.Id, tf2Item.Slug, price: 99m),
+        };
+
+        await _repository.InsertPricesAsync(prices, CancellationToken.None);
+
+        var result = await _repository.GetCurrentPricesByGameAsync("cs2", CancellationToken.None);
+
+        Assert.Single(result);
+        Assert.Equal(cs2Item.Id, result[0].ItemId);
+    }
 
     #endregion
 
