@@ -13,7 +13,7 @@ public class ItemRepository : IItemRepository
     private readonly NpgsqlDataSource _dataSource;
     private readonly ILogger<ItemRepository> _logger;
 
-    public ItemRepository(SkindexerDbContext db, ILogger<ItemRepository> logger, NpgsqlDataSource dataSource)
+    public ItemRepository(SkindexerDbContext db, NpgsqlDataSource dataSource,  ILogger<ItemRepository> logger)
     {
         _db = db;
         _logger = logger;
@@ -146,8 +146,11 @@ public class ItemRepository : IItemRepository
         }
     }
 
-    public Task<IReadOnlyDictionary<string, Guid>> GetSlugToItemIdMapAsync(string gameId, CancellationToken ct = default)
+    public async Task<IReadOnlyDictionary<string, Guid>> GetSlugToItemIdMapAsync(string gameId,
+        CancellationToken ct = default)
     {
-        throw new NotImplementedException();
+        return await _db.Items
+            .Where(i => i.GameId == gameId)
+            .ToDictionaryAsync(i => i.Slug, i => i.Id, ct);
     }
 }

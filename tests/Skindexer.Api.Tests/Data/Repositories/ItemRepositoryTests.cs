@@ -3,47 +3,29 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Npgsql;
 using Skindexer.Api.Data;
 using Skindexer.Api.Data.Repositories;
+using Skindexer.Api.Tests.Data.Repositories.Fixtures;
 using Skindexer.Contracts.Models;
 using Testcontainers.PostgreSql;
 
 namespace Skindexer.Api.Tests.Data.Repositories;
 
-public class ItemRepositoryTests : IAsyncLifetime
+public class ItemRepositoryTests(PostgresFixture fixture) : IClassFixture<PostgresFixture>, IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder()
-        .WithImage("postgres:16-alpine")
-        .WithDatabase("skindexer_test")
-        .WithUsername("test")
-        .WithPassword("test")
-        .Build();
-
     private SkindexerDbContext _db = null!;
-    private NpgsqlDataSource _dataSource = null!;
     private ItemRepository _repository = null!;
-
+    
     public async Task InitializeAsync()
     {
-        await _postgres.StartAsync();
+        _db = new SkindexerDbContext(fixture.Options);
+        await _db.Prices.ExecuteDeleteAsync();
+        await _db.Items.ExecuteDeleteAsync();
 
-        _dataSource = new NpgsqlDataSourceBuilder(_postgres.GetConnectionString())
-            .EnableDynamicJson()
-            .Build();
-
-        var options = new DbContextOptionsBuilder<SkindexerDbContext>()
-            .UseNpgsql(_dataSource)
-            .UseSnakeCaseNamingConvention()
-            .Options;
-
-        _db = new SkindexerDbContext(options);
-        await _db.Database.EnsureCreatedAsync();
-
-        _repository = new ItemRepository(_db, NullLogger<ItemRepository>.Instance, _dataSource);
+        _repository = new ItemRepository(_db, fixture.DataSource, NullLogger<ItemRepository>.Instance);
     }
 
     public async Task DisposeAsync()
     {
         await _db.DisposeAsync();
-        await _postgres.DisposeAsync();
     }
 
     #region Test Data Builders
@@ -180,6 +162,67 @@ public class ItemRepositoryTests : IAsyncLifetime
 
         Assert.Single(result);
         Assert.Equal("cs2", result[0].GameId);
+    }
+
+    #endregion
+    
+    #region GetSlugToItemIdMapAsync
+
+    [Fact]
+    public async Task GetSlugToItemIdMapAsync_NoItems_ReturnsEmptyDictionary()
+    {
+        var result = await _repository.GetSlugToItemIdMapAsync("cs2", CancellationToken.None);
+
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public async Task GetSlugToItemIdMapAsync_ReturnsSlugToIdMappings()
+    {
+        var items = new List<SkinItem>
+        {
+            BuildItem(slug: "ak-47-redline"),
+            BuildItem(slug: "m4a4-howl"),
+            BuildItem(slug: "awp-dragon-lore"),
+        };
+
+        await _repository.UpsertItemsAsync(items, CancellationToken.None);
+
+        var result = await _repository.GetSlugToItemIdMapAsync("cs2", CancellationToken.None);
+
+        Assert.Equal(3, result.Count);
+        Assert.True(result.ContainsKey("ak-47-redline"));
+        Assert.True(result.ContainsKey("m4a4-howl"));
+        Assert.True(result.ContainsKey("awp-dragon-lore"));
+    }
+
+    [Fact]
+    public async Task GetSlugToItemIdMapAsync_IdsMatchStoredItems()
+    {
+        var item = BuildItem(slug: "ak-47-redline");
+        await _repository.UpsertItemsAsync([item], CancellationToken.None);
+
+        var stored = await _db.Items.SingleAsync();
+        var result = await _repository.GetSlugToItemIdMapAsync("cs2", CancellationToken.None);
+
+        Assert.Equal(stored.Id, result["ak-47-redline"]);
+    }
+
+    [Fact]
+    public async Task GetSlugToItemIdMapAsync_FiltersByGameId()
+    {
+        var items = new List<SkinItem>
+        {
+            BuildItem(slug: "ak-47-redline", gameId: "cs2"),
+            BuildItem(slug: "ak-47-redline", gameId: "tf2"),
+        };
+
+        await _repository.UpsertItemsAsync(items, CancellationToken.None);
+
+        var result = await _repository.GetSlugToItemIdMapAsync("cs2", CancellationToken.None);
+
+        Assert.Single(result);
+        Assert.True(result.ContainsKey("ak-47-redline"));
     }
 
     #endregion
