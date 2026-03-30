@@ -10,12 +10,14 @@ namespace Skindexer.Api.Data.Repositories;
 public class ItemRepository : IItemRepository
 {
     private readonly SkindexerDbContext _db;
+    private readonly NpgsqlDataSource _dataSource;
     private readonly ILogger<ItemRepository> _logger;
 
-    public ItemRepository(SkindexerDbContext db, ILogger<ItemRepository> logger)
+    public ItemRepository(SkindexerDbContext db, ILogger<ItemRepository> logger, NpgsqlDataSource dataSource)
     {
         _db = db;
         _logger = logger;
+        _dataSource = dataSource;
     }
 
     public async Task<IReadOnlyList<SkinItem>> GetItemsByGameAsync(string gameId, CancellationToken ct = default)
@@ -48,8 +50,7 @@ public class ItemRepository : IItemRepository
             .Select(g => g.Last())
             .ToList();
 
-        await using var conn = new NpgsqlConnection(_db.Database.GetConnectionString());
-        await conn.OpenAsync(ct);
+        await using var conn = await _dataSource.OpenConnectionAsync(ct);
         await using var transaction = await conn.BeginTransactionAsync(ct);
 
         try
@@ -90,11 +91,11 @@ public class ItemRepository : IItemRepository
                     await writer.WriteAsync(item.GameId, NpgsqlDbType.Varchar, ct);
                     await writer.WriteAsync(item.Slug, NpgsqlDbType.Varchar, ct);
                     await writer.WriteAsync(item.Name, NpgsqlDbType.Varchar, ct);
-                    await WriteNullableAsync(writer, item.ImageUrl, NpgsqlDbType.Text, ct);
+                    await writer.WriteNullableAsync(item.ImageUrl, NpgsqlDbType.Text, ct);
                     await writer.WriteAsync(item.IsTradeable, NpgsqlDbType.Boolean, ct);
                     await writer.WriteAsync(item.IsMarketable, NpgsqlDbType.Boolean, ct);
                     await writer.WriteAsync(JsonSerializer.Serialize(item.Metadata), NpgsqlDbType.Text, ct);
-                    await WriteNullableAsync(writer, item.AddedToGameAt, NpgsqlDbType.TimestampTz, ct);
+                    await writer.WriteNullableAsync(item.AddedToGameAt, NpgsqlDbType.TimestampTz, ct);
                     await writer.WriteAsync(now, NpgsqlDbType.TimestampTz, ct); // created_at — only used on INSERT
                     await writer.WriteAsync(now, NpgsqlDbType.TimestampTz, ct); // updated_at
                 }
@@ -145,18 +146,8 @@ public class ItemRepository : IItemRepository
         }
     }
 
-    private static async Task WriteNullableAsync<T>(
-        NpgsqlBinaryImporter writer, T? value, NpgsqlDbType dbType, CancellationToken ct)
-        where T : struct
+    public Task<IReadOnlyDictionary<string, Guid>> GetSlugToItemIdMapAsync(string gameId, CancellationToken ct = default)
     {
-        if (value is null) await writer.WriteNullAsync(ct);
-        else await writer.WriteAsync(value.Value, dbType, ct);
-    }
-
-    private static async Task WriteNullableAsync(
-        NpgsqlBinaryImporter writer, string? value, NpgsqlDbType dbType, CancellationToken ct)
-    {
-        if (value is null) await writer.WriteNullAsync(ct);
-        else await writer.WriteAsync(value, dbType, ct);
+        throw new NotImplementedException();
     }
 }
