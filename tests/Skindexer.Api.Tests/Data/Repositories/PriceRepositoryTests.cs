@@ -4,47 +4,30 @@ using Npgsql;
 using Skindexer.Api.Data;
 using Skindexer.Api.Data.Entities;
 using Skindexer.Api.Data.Repositories;
+using Skindexer.Api.Tests.Data.Repositories.Fixtures;
 using Skindexer.Contracts.Models;
 using Testcontainers.PostgreSql;
 
 namespace Skindexer.Api.Tests.Data.Repositories;
 
-public class PriceRepositoryTests : IAsyncLifetime
+public class PriceRepositoryTests(PostgresFixture fixture)
+    : IClassFixture<PostgresFixture>, IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder()
-        .WithImage("postgres:16-alpine")
-        .WithDatabase("skindexer_test")
-        .WithUsername("test")
-        .WithPassword("test")
-        .Build();
-
     private SkindexerDbContext _db = null!;
-    private NpgsqlDataSource _dataSource = null!;
     private PriceRepository _repository = null!;
 
     public async Task InitializeAsync()
     {
-        await _postgres.StartAsync();
+        _db = new SkindexerDbContext(fixture.Options);
+        await _db.Prices.ExecuteDeleteAsync();
+        await _db.Items.ExecuteDeleteAsync();
 
-        _dataSource = new NpgsqlDataSourceBuilder(_postgres.GetConnectionString())
-            .EnableDynamicJson()
-            .Build();
-
-        var options = new DbContextOptionsBuilder<SkindexerDbContext>()
-            .UseNpgsql(_dataSource)
-            .UseSnakeCaseNamingConvention()
-            .Options;
-
-        _db = new SkindexerDbContext(options);
-        await _db.Database.EnsureCreatedAsync();
-
-        _repository = new PriceRepository(_db, _dataSource, NullLogger<PriceRepository>.Instance);
+        _repository = new PriceRepository(_db, fixture.DataSource, NullLogger<PriceRepository>.Instance);
     }
 
     public async Task DisposeAsync()
     {
         await _db.DisposeAsync();
-        await _postgres.DisposeAsync();
     }
 
     #region Test Data Builders
