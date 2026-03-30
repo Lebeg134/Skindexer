@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using Scalar.AspNetCore;
 using Skindexer.Api.Data;
 using Skindexer.Api.Data.Repositories;
@@ -20,6 +21,13 @@ services.AddHostedService<FetchScheduler>();
 
 
 var connectionString = builder.Configuration.GetConnectionString("Default")!;
+
+var dataSource = new NpgsqlDataSourceBuilder(connectionString)
+    .EnableDynamicJson()
+    .Build();
+
+services.AddSingleton(dataSource);
+
 services.AddDbContext<SkindexerDbContext>(options =>
     options.UseNpgsql(connectionString)
         .UseSnakeCaseNamingConvention());
