@@ -14,6 +14,9 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Skindexer.Scheduler", "src\Skindexer.Scheduler\Skindexer.Scheduler.csproj", "{B3019EF6-A89C-4DA7-A8A6-DFAA650B34BF}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{6FB75463-91BC-499B-9943-03E979A3DA2E}"
+	ProjectSection(SolutionItems) = preProject
+		tests\TestStyleGuide.md = tests\TestStyleGuide.md
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Skindexer.Api.Tests", "tests\Skindexer.Api.Tests\Skindexer.Api.Tests.csproj", "{2DF21718-DC95-499B-8A10-BED4E5A9CB9C}"
 EndProject
