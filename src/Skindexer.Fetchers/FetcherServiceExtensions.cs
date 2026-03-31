@@ -12,12 +12,13 @@ public static class FetcherServiceExtensions
     {
         // TODO: extract to Skindexer.Game.CS2 package
         // CS2
-        services.AddHttpClient<CS2ByMykelItemFetcher>();
-        services.AddSingleton<IGameFetcher, CS2ByMykelItemFetcher>();
-        services.AddSingleton<CS2ByMykelSkinMapper>();
-        services.AddSingleton<CS2ByMykelCollectibleMapper>();
-        services.AddSingleton<CS2ByMykelPatchMapper>();
-        services.AddSingleton<CS2ByMykelMusicKitMapper>();
+        
+        //services.AddHttpClient<CS2ByMykelItemFetcher>();
+        //services.AddSingleton<IGameFetcher, CS2ByMykelItemFetcher>();
+        //services.AddSingleton<CS2ByMykelSkinMapper>();
+        //services.AddSingleton<CS2ByMykelCollectibleMapper>();
+        //services.AddSingleton<CS2ByMykelPatchMapper>();
+        //services.AddSingleton<CS2ByMykelMusicKitMapper>();
 
         // Rust
         services.AddHttpClient<RustFetcher>();
