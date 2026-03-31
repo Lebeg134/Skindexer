@@ -9,8 +9,8 @@ namespace Skindexer.Fetchers.Interfaces;
 /// - You want a dummy fetcher for local development without hitting live APIs
 /// - You are importing historical data from a source like Kaggle
 ///
-/// TODO: Filepath is read from configuration:
-///   "FileFetchers": { "YourGameId": { "Path": "/data/your-file.csv" } }
+/// The data path is read from configuration via the fetcher's own options class,
+/// e.g. KaggleFetcherOptions.CS2DataPath for the CS2 Kaggle fetcher.
 ///
 /// Examples: Kaggle price history datasets, offline development seeds
 /// </summary>
