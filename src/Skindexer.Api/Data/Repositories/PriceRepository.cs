@@ -24,15 +24,15 @@ public class PriceRepository : IPriceRepository
     public async Task<IReadOnlyList<SkinPrice>> GetCurrentPricesByGameAsync(string gameId,
         CancellationToken ct = default)
     {
-        var sql = """
-                  SELECT DISTINCT ON (p.item_id, p.slug, p.source, p.price_type)
-                      p.item_id, p.slug, p.source, p.price_type,
-                      p.price, p.currency, p.volume, p.recorded_at
-                  FROM price_snapshots p
-                  INNER JOIN items i ON i.id = p.item_id
-                  WHERE i.game_id = {0}
-                  ORDER BY p.item_id, p.slug, p.source, p.price_type, p.recorded_at DESC
-                  """;
+        const string sql = """
+                           SELECT DISTINCT ON (p.item_id, p.slug, p.source, p.price_type)
+                               p.item_id, p.slug, p.source, p.price_type,
+                               p.price, p.currency, p.volume, p.recorded_at
+                           FROM price_snapshots p
+                           INNER JOIN items i ON i.id = p.item_id
+                           WHERE i.game_id = {0}
+                           ORDER BY p.item_id, p.slug, p.source, p.price_type, p.recorded_at DESC
+                           """;
 
         return await _db.Database
             .SqlQueryRaw<SkinPrice>(sql, gameId)
@@ -130,10 +130,7 @@ public class PriceRepository : IPriceRepository
                                         INSERT INTO price_snapshots (id, item_id, slug, source, price_type, price, currency, volume, recorded_at)
                                         SELECT id, item_id, slug, source, price_type, price, currency, volume, recorded_at
                                         FROM price_snapshots_staging
-                                        ON CONFLICT (item_id, source, price_type, recorded_at) DO UPDATE SET
-                                            price  = EXCLUDED.price,
-                                            volume = EXCLUDED.volume
-                                        RETURNING (xmax = 0) AS inserted
+                                        ON CONFLICT (item_id, source, price_type, recorded_at) DO NOTHING
                                         """;
 
                 await using var reader = await upsertCmd.ExecuteReaderAsync(ct);

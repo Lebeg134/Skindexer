@@ -6,6 +6,7 @@ using Skindexer.Api.Data.Repositories;
 using Skindexer.Api.Features;
 using Skindexer.Api.Features.Collections;
 using Skindexer.Api.Features.Grades;
+using Skindexer.Api.Features.Import;
 using Skindexer.Api.Features.Items;
 using Skindexer.Api.Features.Prices;
 using Skindexer.Fetchers;
@@ -14,9 +15,10 @@ using Skindexer.Scheduler;
 
 var builder = WebApplication.CreateBuilder(args);
 var services = builder.Services;
+var configuration = builder.Configuration;
 
 services.AddOpenApi();
-services.AddSkindexerFetchers();
+services.AddSkindexerFetchers(configuration);
 services.AddHostedService<FetchScheduler>();
 
 
@@ -29,7 +31,7 @@ var dataSource = new NpgsqlDataSourceBuilder(connectionString)
 services.AddSingleton(dataSource);
 
 services.AddDbContext<SkindexerDbContext>(options =>
-    options.UseNpgsql(connectionString)
+    options.UseNpgsql(dataSource)
         .UseSnakeCaseNamingConvention());
 
 services.AddScoped<IItemRepository, ItemRepository>();
@@ -53,6 +55,8 @@ GetItemsEndpoint.MapEndpoint(app);
 GetPricesEndpoint.MapEndpoint(app);
 GetCollectionsEndpoint.MapEndpoint(app);
 GetGradesEndpoint.MapEndpoint(app);
+
+CS2KaggleImportEndpoints.MapEndpoint(app);
 
 var registry = app.Services.GetRequiredService<FetcherRegistry>();
 var logger = app.Services.GetRequiredService<ILogger<Program>>();
