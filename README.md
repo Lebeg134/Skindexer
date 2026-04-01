@@ -1,5 +1,4 @@
 # Skindexer
-
 A self-hostable REST API for game skin prices and item catalogs.
 Supports CS2, Rust, and any game you add via the fetcher plugin system.
 
