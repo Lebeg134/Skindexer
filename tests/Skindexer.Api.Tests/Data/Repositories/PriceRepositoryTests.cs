@@ -139,7 +139,8 @@ public class PriceRepositoryTests(PostgresFixture fixture)
         var prices = new List<SkinPrice>
         {
             BuildPrice(item.Id, item.Slug, price: 10m, recordedAt: new DateTime(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc)),
-            BuildPrice(item.Id, item.Slug, price: 11m, recordedAt: new DateTime(2021, 1, 2, 0, 0, 0, DateTimeKind.Utc), source: "steam-market"),
+            BuildPrice(item.Id, item.Slug, price: 11m, recordedAt: new DateTime(2021, 1, 2, 0, 0, 0, DateTimeKind.Utc),
+                source: "steam-market"),
         };
 
         await _repository.InsertPricesAsync(prices, CancellationToken.None);
@@ -267,7 +268,7 @@ public class PriceRepositoryTests(PostgresFixture fixture)
     }
 
     [Fact]
-    public async Task UpsertPricesAsync_ReImport_UpdatedPrice_OverwritesPriceAndVolume()
+    public async Task UpsertPricesAsync_ReImport_SameSnapshot_IsIgnored()
     {
         var item = await SeedItemAsync();
 
@@ -276,17 +277,17 @@ public class PriceRepositoryTests(PostgresFixture fixture)
             BuildPrice(item.Id, item.Slug, price: 10m, volume: 100),
         };
 
-        var updated = new List<SkinPrice>
+        var duplicate = new List<SkinPrice>
         {
             BuildPrice(item.Id, item.Slug, price: 15m, volume: 200),
         };
 
         await _repository.UpsertPricesAsync(original, CancellationToken.None);
-        await _repository.UpsertPricesAsync(updated, CancellationToken.None);
+        await _repository.UpsertPricesAsync(duplicate, CancellationToken.None);
 
         var stored = await _db.Prices.SingleAsync();
-        Assert.Equal(15m, stored.Price);
-        Assert.Equal(200, stored.Volume);
+        Assert.Equal(10m, stored.Price);
+        Assert.Equal(100, stored.Volume);
     }
 
     [Fact]

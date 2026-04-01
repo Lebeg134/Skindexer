@@ -38,6 +38,7 @@ public static class CS2KaggleSlugHelper
     private static string Slugify(string value) =>
         value
             .ToLowerInvariant()
+            .Replace("★", "")
             .Replace("™", "")
             .Replace("|", "")
             .Replace("'", "")

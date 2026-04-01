@@ -24,4 +24,8 @@
     <ProjectReference Include="..\..\src\Skindexer.Api\Skindexer.Api.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="TestData\Kaggle\items\" />
+  </ItemGroup>
+
 </Project>
