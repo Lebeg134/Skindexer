@@ -14,3 +14,5 @@ obj/
 # OS
 .DS_Store
 Thumbs.db
+
+src/Skindexer.Api/appsettings.Development.json
