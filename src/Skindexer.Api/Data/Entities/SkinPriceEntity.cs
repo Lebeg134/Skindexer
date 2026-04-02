@@ -3,7 +3,7 @@ namespace Skindexer.Api.Data.Entities;
 public class SkinPriceEntity
 {
     public Guid Id { get; set; }
-    public Guid ItemId { get; set; }
+    public Guid VariantId { get; set; }
     public string Slug { get; set; } = default!;
     public string Source { get; set; } = default!;
     public string PriceType { get; set; } = default!;
@@ -12,5 +12,5 @@ public class SkinPriceEntity
     public int? Volume { get; set; }
     public DateTime RecordedAt { get; set; }
 
-    public SkinItemEntity Item { get; set; } = default!;
+    public SkinVariantEntity Variant { get; set; } = default!;
 }

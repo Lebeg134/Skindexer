@@ -5,6 +5,7 @@ public class FetchResult
     public string GameId { get; init; } = default!;
     public string Source { get; init; } = default!;
     public IReadOnlyList<SkinItem> Items { get; init; } = [];
+    public IReadOnlyList<SkinVariant> Variants { get; init; } = [];
     public IReadOnlyList<SkinPrice> Prices { get; init; } = [];
     public DateTime FetchedAt { get; init; } = DateTime.UtcNow;
     public bool IsSuccess { get; init; }
@@ -12,11 +13,14 @@ public class FetchResult
     public IReadOnlyList<string> Warnings { get; init; } = [];
 
     public static FetchResult Success(string gameId, string source,
-        IReadOnlyList<SkinItem> items, IReadOnlyList<SkinPrice> prices) => new()
+        IReadOnlyList<SkinItem> items,
+        IReadOnlyList<SkinVariant> variants,
+        IReadOnlyList<SkinPrice> prices) => new()
     {
         GameId = gameId,
         Source = source,
         Items = items,
+        Variants = variants,
         Prices = prices,
         IsSuccess = true
     };
@@ -28,14 +32,17 @@ public class FetchResult
         IsSuccess = false,
         ErrorMessage = error
     };
-    
+
     public static FetchResult Partial(string gameId, string source,
-        IReadOnlyList<SkinItem> items, IReadOnlyList<SkinPrice> prices,
+        IReadOnlyList<SkinItem> items,
+        IReadOnlyList<SkinVariant> variants,
+        IReadOnlyList<SkinPrice> prices,
         IReadOnlyList<string> warnings) => new()
     {
         GameId = gameId,
         Source = source,
         Items = items,
+        Variants = variants,
         Prices = prices,
         IsSuccess = true,
         Warnings = warnings

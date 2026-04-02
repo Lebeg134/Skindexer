@@ -100,7 +100,7 @@ public class CS2KagglePriceFetcherTests
 
         var result = await fetcher.FetchAsync();
 
-        Assert.All(result.Prices, p => Assert.Equal(Guid.Empty, p.ItemId));
+        Assert.All(result.Prices, p => Assert.Equal(Guid.Empty, p.VariantId));
     }
 
     [Fact]

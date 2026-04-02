@@ -55,14 +55,14 @@ public class PriceRepositoryTests(PostgresFixture fixture)
     }
 
     private static SkinPrice BuildPrice(
-        Guid itemId,
+        Guid variantId,
         string slug,
         decimal price = 10m,
         int? volume = 100,
         string source = "kaggle-steam",
         DateTime? recordedAt = null) => new()
     {
-        ItemId = itemId,
+        VariantId = variantId,
         Slug = slug,
         Source = source,
         PriceType = "median_daily",
@@ -127,8 +127,8 @@ public class PriceRepositoryTests(PostgresFixture fixture)
         var result = await _repository.GetCurrentPricesByGameAsync("cs2", CancellationToken.None);
 
         Assert.Equal(2, result.Count);
-        Assert.Contains(result, p => p.ItemId == item1.Id && p.Price == 15m);
-        Assert.Contains(result, p => p.ItemId == item2.Id && p.Price == 550m);
+        Assert.Contains(result, p => p.VariantId == item1.Id && p.Price == 15m);
+        Assert.Contains(result, p => p.VariantId == item2.Id && p.Price == 550m);
     }
 
     [Fact]
@@ -169,7 +169,7 @@ public class PriceRepositoryTests(PostgresFixture fixture)
         var result = await _repository.GetCurrentPricesByGameAsync("cs2", CancellationToken.None);
 
         Assert.Single(result);
-        Assert.Equal(cs2Item.Id, result[0].ItemId);
+        Assert.Equal(cs2Item.Id, result[0].VariantId);
     }
 
     #endregion
@@ -242,8 +242,8 @@ public class PriceRepositoryTests(PostgresFixture fixture)
 
         var stored = await _db.Prices.ToListAsync();
         Assert.Equal(2, stored.Count);
-        Assert.Contains(stored, p => p.ItemId == item1.Id && p.Price == 10m);
-        Assert.Contains(stored, p => p.ItemId == item2.Id && p.Price == 500m);
+        Assert.Contains(stored, p => p.VariantId == item1.Id && p.Price == 10m);
+        Assert.Contains(stored, p => p.VariantId == item2.Id && p.Price == 500m);
     }
 
     #endregion

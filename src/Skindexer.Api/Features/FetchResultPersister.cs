@@ -60,17 +60,17 @@ public class FetchResultPersister : IFetchResultPersister
 
             foreach (var price in result.Prices)
             {
-                if (price.ItemId != Guid.Empty)
+                if (price.VariantId != Guid.Empty)
                 {
                     resolved.Add(price);
                     continue;
                 }
 
-                if (slugMap.TryGetValue(price.Slug, out var itemId))
+                if (slugMap.TryGetValue(price.Slug, out var variantId))
                 {
                     resolved.Add(new SkinPrice
                     {
-                        ItemId = itemId,
+                        VariantId = variantId,
                         Slug = price.Slug,
                         Source = price.Source,
                         PriceType = price.PriceType,

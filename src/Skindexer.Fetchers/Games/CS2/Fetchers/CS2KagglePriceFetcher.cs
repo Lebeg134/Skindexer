@@ -86,8 +86,8 @@ public sealed class CS2KagglePriceFetcher : IFileFetcher
             fileCount, prices.Count, warnings.Count);
 
         return warnings.Count > 0
-            ? FetchResult.Partial(GameId, Sources.KaggleSteam, [], prices, warnings)
-            : FetchResult.Success(GameId, Sources.KaggleSteam, [], prices);
+            ? FetchResult.Partial(GameId, Sources.KaggleSteam, [], [], prices, warnings)
+            : FetchResult.Success(GameId, Sources.KaggleSteam, [], [], prices);
     }
 
     // ── Name table ────────────────────────────────────────────────────────────
@@ -186,7 +186,7 @@ public sealed class CS2KagglePriceFetcher : IFileFetcher
 
                 prices.Add(new SkinPrice
                 {
-                    ItemId     = Guid.Empty,
+                    VariantId  = Guid.Empty,
                     Slug       = slug,
                     Source     = Sources.KaggleSteam,
                     PriceType  = PriceTypes.MedianDaily,

@@ -8,6 +8,7 @@ public class SkindexerDbContext : DbContext
     public SkindexerDbContext(DbContextOptions<SkindexerDbContext> options) : base(options) { }
 
     public DbSet<SkinItemEntity> Items => Set<SkinItemEntity>();
+    public DbSet<SkinVariantEntity> Variants => Set<SkinVariantEntity>();
     public DbSet<SkinPriceEntity> Prices => Set<SkinPriceEntity>();
     public DbSet<CollectionEntity> Collections => Set<CollectionEntity>();
     public DbSet<GradeEntity> Grades => Set<GradeEntity>();

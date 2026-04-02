@@ -11,7 +11,7 @@ public static class GetPricesEndpoint
             var prices = await repository.GetCurrentPricesByGameAsync(gameId, ct);
             return Results.Ok(prices.Select(p => new SkinPriceResponse
             {
-                ItemId = p.ItemId,
+                ItemId = p.VariantId,
                 Slug = p.Slug,
                 Source = p.Source,
                 PriceType = p.PriceType,

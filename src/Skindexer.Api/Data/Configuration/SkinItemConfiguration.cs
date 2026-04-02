@@ -42,7 +42,7 @@ public class SkinItemConfiguration : IEntityTypeConfiguration<SkinItemEntity>
         builder.HasIndex(x => new { x.GameId, x.Slug })
             .IsUnique();
 
-        builder.HasMany(x => x.Prices)
+        builder.HasMany(x => x.Variants)
             .WithOne(x => x.Item)
             .HasForeignKey(x => x.ItemId);
 

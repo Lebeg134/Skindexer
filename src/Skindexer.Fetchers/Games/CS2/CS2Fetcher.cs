@@ -28,9 +28,10 @@ public class CS2Fetcher : IScheduledFetcher
             _logger.LogInformation("Fetching CS2 prices...");
 
             var items = new List<SkinItem>();
+            var variants = new List<SkinVariant>();
             var prices = new List<SkinPrice>();
 
-            return FetchResult.Success(FetcherId, "steam_market", items, prices);
+            return FetchResult.Success(FetcherId, "steam_market", items, variants, prices);
         }
         catch (Exception ex)
         {
