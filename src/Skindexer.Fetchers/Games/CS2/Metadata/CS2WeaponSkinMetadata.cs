@@ -9,8 +9,6 @@ public class CS2WeaponSkinMetadata
     public string? Category { get; init; }
     public string? Collection { get; init; }
     public IReadOnlyList<string> AvailableWears { get; init; } = [];
-    public bool StatTrak { get; init; }
-    public bool Souvenir { get; init; }
     public float? MinFloat { get; init; }
     public float? MaxFloat { get; init; }
     public string? PaintIndex { get; init; }
@@ -26,12 +24,10 @@ public class CS2WeaponSkinMetadata
         [nameof(Category)] = Category,
         [nameof(Collection)] = Collection,
         [nameof(AvailableWears)] = AvailableWears,
-        [nameof(StatTrak)] = StatTrak,
-        [nameof(Souvenir)] = Souvenir,
         [nameof(MinFloat)] = MinFloat,
         [nameof(MaxFloat)] = MaxFloat,
         [nameof(PaintIndex)] = PaintIndex,
         [nameof(PatternName)] = PatternName,
-        [nameof(Description)] = Description
+        [nameof(Description)] = Description,
     };
 }

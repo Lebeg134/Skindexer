@@ -49,7 +49,7 @@ public class PriceRepository : IPriceRepository
             var entities = batch.Select(p => new SkinPriceEntity
             {
                 Id = Guid.NewGuid(),
-                ItemId = p.ItemId,
+                VariantId = p.VariantId,
                 Slug = p.Slug,
                 Source = p.Source,
                 PriceType = p.PriceType,
@@ -69,7 +69,7 @@ public class PriceRepository : IPriceRepository
         if (prices.Count == 0) return;
 
         var deduped = prices
-            .GroupBy(p => (p.ItemId, p.Source, p.PriceType, p.RecordedAt))
+            .GroupBy(p => (p.VariantId, p.Source, p.PriceType, p.RecordedAt))
             .Select(g => g.Last())
             .ToList();
 
@@ -107,7 +107,7 @@ public class PriceRepository : IPriceRepository
                 {
                     await writer.StartRowAsync(ct);
                     await writer.WriteAsync(Guid.NewGuid(), NpgsqlDbType.Uuid, ct);
-                    await writer.WriteAsync(p.ItemId, NpgsqlDbType.Uuid, ct);
+                    await writer.WriteAsync(p.VariantId, NpgsqlDbType.Uuid, ct);
                     await writer.WriteAsync(p.Slug, NpgsqlDbType.Varchar, ct);
                     await writer.WriteAsync(p.Source, NpgsqlDbType.Varchar, ct);
                     await writer.WriteAsync(p.PriceType, NpgsqlDbType.Varchar, ct);

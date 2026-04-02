@@ -11,8 +11,8 @@ public class SkinPriceConfiguration : IEntityTypeConfiguration<SkinPriceEntity>
         builder.ToTable("price_snapshots");
 
         builder.HasKey(x => x.Id);
-        
-        builder.Property(x => x.ItemId)
+
+        builder.Property(x => x.VariantId)
             .IsRequired();
 
         builder.Property(x => x.Slug)
@@ -37,13 +37,13 @@ public class SkinPriceConfiguration : IEntityTypeConfiguration<SkinPriceEntity>
 
         builder.Property(x => x.RecordedAt)
             .IsRequired();
-        
-        builder.HasOne(x => x.Item)
-            .WithMany()
-            .HasForeignKey(x => x.ItemId)
+
+        builder.HasOne(x => x.Variant)
+            .WithMany(x => x.Prices)
+            .HasForeignKey(x => x.VariantId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasIndex(x => new { x.ItemId, x.Source, x.PriceType, x.RecordedAt })
+        builder.HasIndex(x => new { x.VariantId, x.Source, x.PriceType, x.RecordedAt })
             .IsUnique();
     }
 }

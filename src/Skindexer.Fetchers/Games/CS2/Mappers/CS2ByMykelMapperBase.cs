@@ -15,7 +15,7 @@ public abstract class CS2ByMykelMapperBase<TDto>
         _filename = filename;
     }
 
-    public IReadOnlyList<SkinItem> Map(IReadOnlyList<TDto> dtos, List<string> warnings)
+    public MapResult Map(IReadOnlyList<TDto> dtos, List<string> warnings)
     {
         // Step 1 — generate base slugs
         var mapped = new List<(TDto Dto, string BaseSlug)>();
@@ -35,16 +35,20 @@ public abstract class CS2ByMykelMapperBase<TDto>
         var collisionSlugs = SlugCollisionResolver.FindCollisions(mapped, GetDiscriminator);
         _logger.LogDebug("Found {Count} slug collision groups in {File}", collisionSlugs.Count, _filename);
 
-        // Step 3 — construct SkinItems with resolved slugs
-        var results = new List<SkinItem>();
+        // Step 3 — construct SkinItems and SkinVariants with resolved slugs
+        var items = new List<SkinItem>();
+        var variants = new List<SkinVariant>();
+
         foreach (var (dto, baseSlug) in mapped)
         {
             try
             {
                 var slug = SlugCollisionResolver.ResolveSlug(baseSlug, GetDiscriminator(dto), collisionSlugs);
                 var item = MapItem(dto, slug);
-                if (item is not null)
-                    results.Add(item);
+                if (item is null) continue;
+
+                items.Add(item);
+                variants.AddRange(MapVariants(dto, item));
             }
             catch (Exception ex)
             {
@@ -52,10 +56,16 @@ public abstract class CS2ByMykelMapperBase<TDto>
             }
         }
 
-        return results;
+        return new MapResult(items, variants);
     }
 
     protected abstract string? GetName(TDto dto);
     protected abstract string? GetDiscriminator(TDto dto);
     protected abstract SkinItem? MapItem(TDto dto, string slug);
+
+    /// <summary>
+    /// Produces the SkinVariant rows for a successfully mapped item.
+    /// Default implementation returns empty — override in mappers that produce variants.
+    /// </summary>
+    protected virtual IReadOnlyList<SkinVariant> MapVariants(TDto dto, SkinItem item) => [];
 }

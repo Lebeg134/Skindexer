@@ -26,7 +26,9 @@ public class CS2ByMykelItemFetcher : IScheduledFetcher
     private readonly CS2ByMykelPatchMapper _patchMapper;
     private readonly CS2ByMykelMusicKitMapper _musicKitMapper;
 
-    public CS2ByMykelItemFetcher(HttpClient http, CS2ByMykelSkinMapper skinMapper, CS2ByMykelCollectibleMapper collectibleMapper, CS2ByMykelPatchMapper patchMapper, CS2ByMykelMusicKitMapper musicKitMapper)
+    public CS2ByMykelItemFetcher(HttpClient http, CS2ByMykelSkinMapper skinMapper,
+        CS2ByMykelCollectibleMapper collectibleMapper, CS2ByMykelPatchMapper patchMapper,
+        CS2ByMykelMusicKitMapper musicKitMapper)
     {
         _http = http;
         _skinMapper = skinMapper;
@@ -44,17 +46,28 @@ public class CS2ByMykelItemFetcher : IScheduledFetcher
     public async Task<FetchResult> FetchAsync(CancellationToken ct = default)
     {
         var items = new List<SkinItem>();
+        var variants = new List<SkinVariant>();
         var warnings = new List<string>();
 
         var skinDtos = await FetchDtosAsync<ByMykelSkin>("skins.json", warnings, ct);
-        items.AddRange(_skinMapper.Map(skinDtos, warnings));
-        var collectibleDtos = await FetchDtosAsync<ByMykelCollectible>("collectibles.json", warnings, ct);
-        items.AddRange(_collectibleMapper.Map(collectibleDtos, warnings));
-        var patchDtos = await FetchDtosAsync<ByMykelPatch>("patches.json", warnings, ct);
-        items.AddRange(_patchMapper.Map(patchDtos, warnings));
-        var musicKitDtos = await FetchDtosAsync<ByMykelMusicKit>("music_kits.json", warnings, ct);
-        items.AddRange(_musicKitMapper.Map(musicKitDtos, warnings));
+        var skinResult = _skinMapper.Map(skinDtos, warnings);
+        items.AddRange(skinResult.Items);
+        variants.AddRange(skinResult.Variants);
 
+        var collectibleDtos = await FetchDtosAsync<ByMykelCollectible>("collectibles.json", warnings, ct);
+        var collectibleResult = _collectibleMapper.Map(collectibleDtos, warnings);
+        items.AddRange(collectibleResult.Items);
+        variants.AddRange(collectibleResult.Variants);
+
+        var patchDtos = await FetchDtosAsync<ByMykelPatch>("patches.json", warnings, ct);
+        var patchResult = _patchMapper.Map(patchDtos, warnings);
+        items.AddRange(patchResult.Items);
+        variants.AddRange(patchResult.Variants);
+
+        var musicKitDtos = await FetchDtosAsync<ByMykelMusicKit>("music_kits.json", warnings, ct);
+        var musicKitResult = _musicKitMapper.Map(musicKitDtos, warnings);
+        items.AddRange(musicKitResult.Items);
+        variants.AddRange(musicKitResult.Variants);
         await FetchEndpoint<ByMykelSticker>("stickers.json", MapSticker, items, warnings, ct);
         await FetchEndpoint<ByMykelKeychain>("keychains.json", MapKeychain, items, warnings, ct);
         await FetchEndpoint<ByMykelCrate>("crates.json", MapCrate, items, warnings, ct);
@@ -70,10 +83,18 @@ public class CS2ByMykelItemFetcher : IScheduledFetcher
 
         warnings.AddRange(dupes.Select(dupe => $"Duplicate slug detected: [{dupe.GameId}] {dupe.Slug}"));
 
+        var dupeVariants = variants
+            .GroupBy(v => v.Slug)
+            .Where(g => g.Count() > 1)
+            .Select(g => g.Key)
+            .ToList();
 
+        warnings.AddRange(dupeVariants.Select(slug => $"Duplicate variant slug detected: {slug}"));
+            
+            
         return warnings.Count > 0
-            ? FetchResult.Partial(GameId, Source, items, [], warnings)
-            : FetchResult.Success(GameId, Source, items, []);
+            ? FetchResult.Partial(GameId, Source, items, variants, [], warnings)
+            : FetchResult.Success(GameId, Source, items, variants, []);
     }
 
 

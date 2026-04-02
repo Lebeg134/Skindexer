@@ -20,5 +20,5 @@ public class SkinItemEntity
     public Guid? GradeId { get; set; }
     public GradeEntity? Grade { get; set; }
 
-    public ICollection<SkinPriceEntity> Prices { get; set; } = [];
+    public ICollection<SkinVariantEntity> Variants { get; set; } = [];
 }
