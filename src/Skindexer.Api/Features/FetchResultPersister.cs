@@ -2,8 +2,8 @@ using Microsoft.Extensions.Logging;
 using Npgsql;
 using Skindexer.Api.Features.Items;
 using Skindexer.Api.Features.Prices;
+using Skindexer.Api.Features.Variants;
 using Skindexer.Contracts.Models;
-using Skindexer.Fetchers;
 using Skindexer.Fetchers.Interfaces;
 
 namespace Skindexer.Api.Features;
@@ -11,15 +11,19 @@ namespace Skindexer.Api.Features;
 public class FetchResultPersister : IFetchResultPersister
 {
     private readonly IItemRepository _items;
+    private readonly IVariantRepository _variants;
     private readonly IPriceRepository _prices;
     private readonly ILogger<FetchResultPersister> _logger;
 
     public FetchResultPersister(
         IItemRepository items,
+        IVariantRepository variants,
         IPriceRepository prices,
-        ILogger<FetchResultPersister> logger)
+        ILogger<FetchResultPersister> logger
+    )
     {
         _items = items;
+        _variants = variants;
         _prices = prices;
         _logger = logger;
     }
@@ -39,18 +43,31 @@ public class FetchResultPersister : IFetchResultPersister
                 result.Items.Count, result.GameId);
         }
 
+        if (result.Variants.Count > 0)
+        {
+            _logger.LogInformation(
+                "Persisting {Count} variants for {GameId} from {Source}",
+                result.Variants.Count, result.GameId, result.Source);
+
+            await _variants.UpsertVariantsAsync(result.Variants, ct);
+
+            _logger.LogInformation(
+                "Upserted {Count} variants for {GameId}",
+                result.Variants.Count, result.GameId);
+        }
+
         if (result.Prices.Count > 0)
         {
             _logger.LogInformation(
                 "Persisting {Count} prices for {GameId} from {Source}",
                 result.Prices.Count, result.GameId, result.Source);
 
-            var slugMap = await _items.GetSlugToItemIdMapAsync(result.GameId, ct);
+            var slugMap = await _variants.GetSlugToVariantIdMapAsync(result.GameId, ct);
 
             if (slugMap.Count == 0)
             {
                 _logger.LogWarning(
-                    "Slug map is empty for {GameId} — items may not have been seeded yet. Skipping price write.",
+                    "Variant slug map is empty for {GameId} — variants may not have been seeded yet. Skipping price write.",
                     result.GameId);
                 return;
             }

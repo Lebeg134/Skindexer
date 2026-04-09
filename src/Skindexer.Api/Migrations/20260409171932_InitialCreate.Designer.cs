@@ -13,7 +13,7 @@ using Skindexer.Api.Data;
 namespace Skindexer.Api.Migrations
 {
     [DbContext(typeof(SkindexerDbContext))]
-    [Migration("20260323114115_InitialCreate")]
+    [Migration("20260409171932_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -196,10 +196,6 @@ namespace Skindexer.Api.Migrations
                         .HasColumnType("character varying(16)")
                         .HasColumnName("currency");
 
-                    b.Property<Guid>("ItemId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("item_id");
-
                     b.Property<decimal>("Price")
                         .HasPrecision(18, 8)
                         .HasColumnType("numeric(18,8)")
@@ -227,6 +223,10 @@ namespace Skindexer.Api.Migrations
                         .HasColumnType("character varying(128)")
                         .HasColumnName("source");
 
+                    b.Property<Guid>("VariantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("variant_id");
+
                     b.Property<int?>("Volume")
                         .HasColumnType("integer")
                         .HasColumnName("volume");
@@ -234,10 +234,52 @@ namespace Skindexer.Api.Migrations
                     b.HasKey("Id")
                         .HasName("pk_price_snapshots");
 
-                    b.HasIndex("ItemId", "RecordedAt")
-                        .HasDatabaseName("ix_price_snapshots_item_id_recorded_at");
+                    b.HasIndex("VariantId", "Source", "PriceType", "RecordedAt")
+                        .IsUnique()
+                        .HasDatabaseName("ix_price_snapshots_variant_id_source_price_type_recorded_at");
 
                     b.ToTable("price_snapshots", (string)null);
+                });
+
+            modelBuilder.Entity("Skindexer.Api.Data.Entities.SkinVariantEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("GameId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("game_id");
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("item_id");
+
+                    b.Property<Dictionary<string, object>>("Metadata")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("metadata");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("slug");
+
+                    b.HasKey("Id")
+                        .HasName("pk_variants");
+
+                    b.HasIndex("ItemId")
+                        .HasDatabaseName("ix_variants_item_id");
+
+                    b.HasIndex("Slug")
+                        .IsUnique()
+                        .HasDatabaseName("ix_variants_slug");
+
+                    b.ToTable("variants", (string)null);
                 });
 
             modelBuilder.Entity("Skindexer.Api.Data.Entities.SkinItemEntity", b =>
@@ -259,12 +301,24 @@ namespace Skindexer.Api.Migrations
 
             modelBuilder.Entity("Skindexer.Api.Data.Entities.SkinPriceEntity", b =>
                 {
-                    b.HasOne("Skindexer.Api.Data.Entities.SkinItemEntity", "Item")
+                    b.HasOne("Skindexer.Api.Data.Entities.SkinVariantEntity", "Variant")
                         .WithMany("Prices")
-                        .HasForeignKey("ItemId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasForeignKey("VariantId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
-                        .HasConstraintName("fk_price_snapshots_items_item_id");
+                        .HasConstraintName("fk_price_snapshots_variants_variant_id");
+
+                    b.Navigation("Variant");
+                });
+
+            modelBuilder.Entity("Skindexer.Api.Data.Entities.SkinVariantEntity", b =>
+                {
+                    b.HasOne("Skindexer.Api.Data.Entities.SkinItemEntity", "Item")
+                        .WithMany("Variants")
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_variants_items_item_id");
 
                     b.Navigation("Item");
                 });
@@ -280,6 +334,11 @@ namespace Skindexer.Api.Migrations
                 });
 
             modelBuilder.Entity("Skindexer.Api.Data.Entities.SkinItemEntity", b =>
+                {
+                    b.Navigation("Variants");
+                });
+
+            modelBuilder.Entity("Skindexer.Api.Data.Entities.SkinVariantEntity", b =>
                 {
                     b.Navigation("Prices");
                 });
