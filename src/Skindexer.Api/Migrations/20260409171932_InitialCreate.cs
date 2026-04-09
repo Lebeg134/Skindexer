@@ -75,11 +75,32 @@ namespace Skindexer.Api.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "price_snapshots",
+                name: "variants",
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     item_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    game_id = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
+                    slug = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
+                    metadata = table.Column<Dictionary<string, object>>(type: "jsonb", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_variants", x => x.id);
+                    table.ForeignKey(
+                        name: "fk_variants_items_item_id",
+                        column: x => x.item_id,
+                        principalTable: "items",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "price_snapshots",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    variant_id = table.Column<Guid>(type: "uuid", nullable: false),
                     slug = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
                     source = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     price_type = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
@@ -92,11 +113,11 @@ namespace Skindexer.Api.Migrations
                 {
                     table.PrimaryKey("pk_price_snapshots", x => x.id);
                     table.ForeignKey(
-                        name: "fk_price_snapshots_items_item_id",
-                        column: x => x.item_id,
-                        principalTable: "items",
+                        name: "fk_price_snapshots_variants_variant_id",
+                        column: x => x.variant_id,
+                        principalTable: "variants",
                         principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateIndex(
@@ -134,9 +155,21 @@ namespace Skindexer.Api.Migrations
                 column: "grade_id");
 
             migrationBuilder.CreateIndex(
-                name: "ix_price_snapshots_item_id_recorded_at",
+                name: "ix_price_snapshots_variant_id_source_price_type_recorded_at",
                 table: "price_snapshots",
-                columns: new[] { "item_id", "recorded_at" });
+                columns: new[] { "variant_id", "source", "price_type", "recorded_at" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "ix_variants_item_id",
+                table: "variants",
+                column: "item_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_variants_slug",
+                table: "variants",
+                column: "slug",
+                unique: true);
         }
 
         /// <inheritdoc />
@@ -144,6 +177,9 @@ namespace Skindexer.Api.Migrations
         {
             migrationBuilder.DropTable(
                 name: "price_snapshots");
+
+            migrationBuilder.DropTable(
+                name: "variants");
 
             migrationBuilder.DropTable(
                 name: "items");

@@ -9,6 +9,7 @@ using Skindexer.Api.Features.Grades;
 using Skindexer.Api.Features.Import;
 using Skindexer.Api.Features.Items;
 using Skindexer.Api.Features.Prices;
+using Skindexer.Api.Features.Variants;
 using Skindexer.Fetchers;
 using Skindexer.Fetchers.Interfaces;
 using Skindexer.Scheduler;
@@ -38,6 +39,7 @@ services.AddScoped<IItemRepository, ItemRepository>();
 services.AddScoped<IPriceRepository, PriceRepository>();
 services.AddScoped<ICollectionRepository, CollectionRepository>();
 services.AddScoped<IGradeRepository, GradeRepository>();
+services.AddScoped<IVariantRepository, VariantRepository>();
 
 services.AddScoped<IFetchResultPersister, FetchResultPersister>();
 
