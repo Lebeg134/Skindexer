@@ -19,12 +19,12 @@ public static class FetcherServiceExtensions
         services.Configure<KaggleFetcherOptions>(configuration.GetSection("Kaggle"));
         services.AddSingleton<CS2KagglePriceFetcher>();
         
-        services.AddHttpClient<CS2ByMykelItemFetcher>();
-        services.AddSingleton<IGameFetcher, CS2ByMykelItemFetcher>();
-        services.AddSingleton<CS2ByMykelSkinMapper>();
-        services.AddSingleton<CS2ByMykelCollectibleMapper>();
-        services.AddSingleton<CS2ByMykelPatchMapper>();
-        services.AddSingleton<CS2ByMykelMusicKitMapper>();
+        //services.AddHttpClient<CS2ByMykelItemFetcher>();
+        //services.AddSingleton<IGameFetcher, CS2ByMykelItemFetcher>();
+        //services.AddSingleton<CS2ByMykelSkinMapper>();
+        //services.AddSingleton<CS2ByMykelCollectibleMapper>();
+        //services.AddSingleton<CS2ByMykelPatchMapper>();
+        //services.AddSingleton<CS2ByMykelMusicKitMapper>();
         
         // Rust
         services.AddHttpClient<RustFetcher>();

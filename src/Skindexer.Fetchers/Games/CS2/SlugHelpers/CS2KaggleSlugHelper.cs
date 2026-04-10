@@ -9,7 +9,7 @@ public static class CS2KaggleSlugHelper
     /// e.g. weapon: "AK-47", skinName: "Redline", wear: "Minimal Wear", statTrak: true
     ///      → "ak-47-redline-stattrak-minimal-wear"
     /// </summary>
-    public static string BuildPriceSlug(string weapon, string skinName, string wear, bool statTrak)
+    public static string BuildPriceSlug(string weapon, string skinName, string wear, bool statTrak, bool souvenir)
     {
         var wearSlug = CS2WearHelper.WearSlugs.GetValueOrDefault(wear, Slugify(wear));
 
@@ -21,6 +21,9 @@ public static class CS2KaggleSlugHelper
 
         if (statTrak)
             parts.Add("stattrak");
+        
+        if (souvenir)
+            parts.Add("souvenir");
 
         parts.Add(wearSlug);
 

@@ -133,7 +133,7 @@ public sealed class CS2KagglePriceFetcher : IFileFetcher
         List<string> warnings,
         CancellationToken ct)
     {
-        var (wear, statTrak) = CS2WearHelper.ParseMarketHashName(marketHashName);
+        var (wear, statTrak, souvenir) = CS2WearHelper.ParseMarketHashName(marketHashName);
 
         if (wear is null)
         {
@@ -145,7 +145,7 @@ public sealed class CS2KagglePriceFetcher : IFileFetcher
 
         // Parse "StatTrak™ AK-47 | Redline (Field-Tested)"
         // → weapon: "AK-47", skinName: "Redline"
-        var (weapon, skinName) = ParseWeaponAndSkin(marketHashName, statTrak);
+        var (weapon, skinName) = ParseWeaponAndSkin(marketHashName, statTrak, souvenir);
 
         if (weapon is null || skinName is null)
         {
@@ -153,7 +153,7 @@ public sealed class CS2KagglePriceFetcher : IFileFetcher
             return [];
         }
 
-        var slug = CS2KaggleSlugHelper.BuildPriceSlug(weapon, skinName, wear, statTrak);
+        var slug = CS2KaggleSlugHelper.BuildPriceSlug(weapon, skinName, wear, statTrak, souvenir);
         var prices = new List<SkinPrice>();
 
         var config = new CsvConfiguration(CultureInfo.InvariantCulture)
@@ -213,13 +213,16 @@ public sealed class CS2KagglePriceFetcher : IFileFetcher
     /// "StatTrak™ AK-47 | Redline (Minimal Wear)" → ("AK-47", "Redline")
     /// </summary>
     private static (string? Weapon, string? SkinName) ParseWeaponAndSkin(
-        string marketHashName, bool statTrak)
+        string name, bool statTrak, bool souvenir)
     {
         // Strip StatTrak™ prefix
-        var name = statTrak
-            ? marketHashName.Replace("StatTrak™", "", StringComparison.OrdinalIgnoreCase).Trim()
-            : marketHashName;
+        if (statTrak)
+            name = name.Replace("StatTrak™", "", StringComparison.OrdinalIgnoreCase).Trim();
 
+        // Strip "Souvenir" suffix
+        if (souvenir)
+            name = name.Replace("Souvenir", "", StringComparison.OrdinalIgnoreCase).Trim();
+        
         // Strip wear suffix "(Field-Tested)" etc.
         var wearStart = name.LastIndexOf('(');
         if (wearStart > 0)

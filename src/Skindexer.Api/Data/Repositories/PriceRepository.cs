@@ -85,7 +85,7 @@ public class PriceRepository : IPriceRepository
                 cmd.CommandText = """
                                   CREATE TEMP TABLE price_snapshots_staging (
                                       id          uuid,
-                                      item_id     uuid,
+                                      variant_id  uuid,
                                       slug        varchar(256),
                                       source      varchar(128),
                                       price_type  varchar(64),
@@ -100,7 +100,7 @@ public class PriceRepository : IPriceRepository
 
             // Step 2 — Binary COPY into staging
             await using (var writer = await conn.BeginBinaryImportAsync(
-                             "COPY price_snapshots_staging (id, item_id, slug, source, price_type, price, currency, volume, recorded_at) FROM STDIN (FORMAT BINARY)",
+                             "COPY price_snapshots_staging (id, variant_id, slug, source, price_type, price, currency, volume, recorded_at) FROM STDIN (FORMAT BINARY)",
                              ct))
             {
                 foreach (var p in deduped)
@@ -121,31 +121,25 @@ public class PriceRepository : IPriceRepository
             }
 
             // Step 3 — Upsert from staging
-            int inserted = 0, updated = 0;
-
             await using (var upsertCmd = conn.CreateCommand())
             {
                 upsertCmd.Transaction = transaction;
                 upsertCmd.CommandText = """
-                                        INSERT INTO price_snapshots (id, item_id, slug, source, price_type, price, currency, volume, recorded_at)
-                                        SELECT id, item_id, slug, source, price_type, price, currency, volume, recorded_at
+                                        INSERT INTO price_snapshots (id, variant_id, slug, source, price_type, price, currency, volume, recorded_at)
+                                        SELECT id, variant_id, slug, source, price_type, price, currency, volume, recorded_at
                                         FROM price_snapshots_staging
-                                        ON CONFLICT (item_id, source, price_type, recorded_at) DO NOTHING
+                                        ON CONFLICT (variant_id, source, price_type, recorded_at) DO NOTHING
                                         """;
 
-                await using var reader = await upsertCmd.ExecuteReaderAsync(ct);
-                while (await reader.ReadAsync(ct))
-                {
-                    if (reader.GetBoolean(0)) inserted++;
-                    else updated++;
-                }
+                var inserted = await upsertCmd.ExecuteNonQueryAsync(ct);
+                var skipped = deduped.Count - inserted;
+
+                await transaction.CommitAsync(ct);
+
+                _logger.LogInformation(
+                    "BulkUpsertPrices complete — {Total} processed ({Inserted} inserted, {Skipped} skipped)",
+                    deduped.Count, inserted, skipped);
             }
-
-            await transaction.CommitAsync(ct);
-
-            _logger.LogInformation(
-                "BulkUpsertPrices complete — {Total} processed ({Inserted} inserted, {Updated} updated)",
-                deduped.Count, inserted, updated);
         }
         catch (Exception ex)
         {

@@ -49,11 +49,46 @@ public class FetchResultPersister : IFetchResultPersister
                 "Persisting {Count} variants for {GameId} from {Source}",
                 result.Variants.Count, result.GameId, result.Source);
 
-            await _variants.UpsertVariantsAsync(result.Variants, ct);
+            var itemSlugMap = await _items.GetSlugToItemIdMapAsync(result.GameId, ct);
 
-            _logger.LogInformation(
-                "Upserted {Count} variants for {GameId}",
-                result.Variants.Count, result.GameId);
+            var remapped = new List<SkinVariant>(result.Variants.Count);
+            var unresolved = new List<string>();
+
+            foreach (var variant in result.Variants)
+            {
+                // Find the parent item by its ItemId, look up its slug, then resolve the DB id
+                var parentItem = result.Items.FirstOrDefault(i => i.Id == variant.ItemId);
+                if (parentItem is null || !itemSlugMap.TryGetValue(parentItem.Slug, out var dbItemId))
+                {
+                    unresolved.Add(variant.Slug);
+                    continue;
+                }
+
+                remapped.Add(new SkinVariant
+                {
+                    Id       = variant.Id,
+                    ItemId   = dbItemId,
+                    GameId   = variant.GameId,
+                    Slug     = variant.Slug,
+                    Metadata = variant.Metadata,
+                });
+            }
+
+            if (unresolved.Count > 0)
+            {
+                _logger.LogWarning(
+                    "Could not resolve parent item for {UnresolvedCount} variant(s) for {GameId} — dropping them. First 10: {Slugs}",
+                    unresolved.Count, result.GameId, unresolved.Take(10));
+            }
+
+            if (remapped.Count > 0)
+            {
+                await _variants.UpsertVariantsAsync(remapped, ct);
+
+                _logger.LogInformation(
+                    "Upserted {Count} variants for {GameId} ({Unresolved} dropped)",
+                    remapped.Count, result.GameId, unresolved.Count);
+            }
         }
 
         if (result.Prices.Count > 0)
