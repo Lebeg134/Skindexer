@@ -19,12 +19,12 @@ namespace Skindexer.Fetchers.Games.CS2.Fetchers;
 /// </summary>
 public sealed class CS2KagglePriceFetcher : IFileFetcher
 {
-    public string FetcherId   => "cs2-kaggle-steam";
+    public string FetcherId => "cs2-kaggle-steam";
     public string DisplayName => "CS2 Kaggle Steam Prices";
     public string[] SupportedExtensions => [".csv"];
 
-    private const string GameId    = "cs2";
-    private const string ItemsDir  = "items";
+    private const string GameId = "cs2";
+    private const string ItemsDir = "items";
     private const string NameTable = "name_conversion_table.csv";
 
     private readonly ILogger<CS2KagglePriceFetcher> _logger;
@@ -34,11 +34,15 @@ public sealed class CS2KagglePriceFetcher : IFileFetcher
         IOptions<KaggleFetcherOptions> options,
         ILogger<CS2KagglePriceFetcher> logger)
     {
-        _logger   = logger;
+        _logger = logger;
         _dataPath = options.Value.CS2DataPath;
     }
 
-    public async Task<FetchResult> FetchAsync(CancellationToken cancellationToken = default)
+    public Task<FetchResult> FetchAsync(CancellationToken ct = default)
+        => FetchAsync(new CS2KaggleFetchContext(), ct);
+
+    public async Task<FetchResult> FetchAsync(CS2KaggleFetchContext context,
+        CancellationToken cancellationToken = default)
     {
         // ── Validate directory structure ──────────────────────────────────────
         var itemsPath = Path.Combine(_dataPath, ItemsDir);
@@ -49,7 +53,7 @@ public sealed class CS2KagglePriceFetcher : IFileFetcher
 
         // ── Load name conversion table ────────────────────────────────────────
         var nameTablePath = Path.Combine(_dataPath, NameTable);
-        var nameMap       = await LoadNameTableAsync(nameTablePath, cancellationToken);
+        var nameMap = await LoadNameTableAsync(nameTablePath, cancellationToken);
 
         if (nameMap.Count == 0)
             _logger.LogWarning(
@@ -58,7 +62,7 @@ public sealed class CS2KagglePriceFetcher : IFileFetcher
 
         // ── Stream each CSV ───────────────────────────────────────────────────
         var csvFiles = Directory.EnumerateFiles(itemsPath, "*.csv");
-        var prices   = new List<SkinPrice>();
+        var prices = new List<SkinPrice>();
         var warnings = new List<string>();
         var fileCount = 0;
 
@@ -66,13 +70,13 @@ public sealed class CS2KagglePriceFetcher : IFileFetcher
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            var encodedName   = Path.GetFileNameWithoutExtension(filePath);
+            var encodedName = Path.GetFileNameWithoutExtension(filePath);
             var marketHashName = nameMap.TryGetValue(encodedName, out var mapped)
                 ? mapped
                 : Uri.UnescapeDataString(encodedName);
 
             var filePrices = await ParsePriceFileAsync(
-                filePath, marketHashName, warnings, cancellationToken);
+                filePath, marketHashName, context, warnings, cancellationToken);
 
             prices.AddRange(filePrices);
             fileCount++;
@@ -108,7 +112,7 @@ public sealed class CS2KagglePriceFetcher : IFileFetcher
         await using var stream = new FileStream(path, FileMode.Open, FileAccess.Read,
             FileShare.Read, bufferSize: 65536, useAsync: true);
         using var reader = new StreamReader(stream);
-        using var csv    = new CsvReader(reader, config);
+        using var csv = new CsvReader(reader, config);
 
         await csv.ReadAsync();
         csv.ReadHeader();
@@ -130,6 +134,7 @@ public sealed class CS2KagglePriceFetcher : IFileFetcher
     private async Task<List<SkinPrice>> ParsePriceFileAsync(
         string filePath,
         string marketHashName,
+        CS2KaggleFetchContext context,
         List<string> warnings,
         CancellationToken ct)
     {
@@ -143,8 +148,6 @@ public sealed class CS2KagglePriceFetcher : IFileFetcher
             return [];
         }
 
-        // Parse "StatTrak™ AK-47 | Redline (Field-Tested)"
-        // → weapon: "AK-47", skinName: "Redline"
         var (weapon, skinName) = ParseWeaponAndSkin(marketHashName, statTrak, souvenir);
 
         if (weapon is null || skinName is null)
@@ -154,11 +157,19 @@ public sealed class CS2KagglePriceFetcher : IFileFetcher
         }
 
         var slug = CS2KaggleSlugHelper.BuildPriceSlug(weapon, skinName, wear, statTrak, souvenir);
+
+        // Resolve which slugs this price entry should be written to
+        var targetSlugs = ResolveTargetSlugs(slug, weapon, skinName, wear, statTrak, souvenir, context, warnings);
+
+        if (targetSlugs.Count == 0)
+            return [];
+
         var prices = new List<SkinPrice>();
+
 
         var config = new CsvConfiguration(CultureInfo.InvariantCulture)
         {
-            HasHeaderRecord  = true,
+            HasHeaderRecord = true,
             MissingFieldFound = null, // unix timestamp header has a space, be lenient
         };
 
@@ -167,7 +178,7 @@ public sealed class CS2KagglePriceFetcher : IFileFetcher
             await using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read,
                 FileShare.Read, bufferSize: 65536, useAsync: true);
             using var reader = new StreamReader(stream);
-            using var csv    = new CsvReader(reader, config);
+            using var csv = new CsvReader(reader, config);
 
             await csv.ReadAsync();
             csv.ReadHeader();
@@ -176,25 +187,24 @@ public sealed class CS2KagglePriceFetcher : IFileFetcher
             {
                 ct.ThrowIfCancellationRequested();
 
-                if (!csv.TryGetField<decimal>(0, out var price))
-                    continue;
-                if (!csv.TryGetField<int>(1, out var quantity))
-                    continue;
-                // column 2 is the date string — skip it
-                if (!csv.TryGetField<long>(3, out var unixTs))
-                    continue;
+                if (!csv.TryGetField<decimal>(0, out var price)) continue;
+                if (!csv.TryGetField<int>(1, out var quantity)) continue;
+                if (!csv.TryGetField<long>(3, out var unixTs)) continue;
 
-                prices.Add(new SkinPrice
+                foreach (var (targetSlug, variantId) in targetSlugs)
                 {
-                    VariantId  = Guid.Empty,
-                    Slug       = slug,
-                    Source     = Sources.KaggleSteam,
-                    PriceType  = PriceTypes.MedianDaily,
-                    Price      = price,
-                    Currency   = "USD",
-                    Volume     = quantity,
-                    RecordedAt = DateTimeOffset.FromUnixTimeSeconds(unixTs).UtcDateTime,
-                });
+                    prices.Add(new SkinPrice
+                    {
+                        VariantId = variantId,
+                        Slug = targetSlug,
+                        Source = Sources.KaggleSteam,
+                        PriceType = PriceTypes.MedianDaily,
+                        Price = price,
+                        Currency = "USD",
+                        Volume = quantity,
+                        RecordedAt = DateTimeOffset.FromUnixTimeSeconds(unixTs).UtcDateTime,
+                    });
+                }
             }
         }
         catch (Exception ex)
@@ -203,6 +213,54 @@ public sealed class CS2KagglePriceFetcher : IFileFetcher
         }
 
         return prices;
+    }
+
+
+    internal static List<(string Slug, Guid VariantId)> ResolveTargetSlugs(
+        string slug,
+        string weapon,
+        string skinName,
+        string wear,
+        bool statTrak,
+        bool souvenir,
+        CS2KaggleFetchContext context,
+        List<string> warnings)
+    {
+        // No context provided — pass through with Guid.Empty (prices-only mode)
+        if (context.VariantSlugMap.Count == 0)
+            return [(slug, Guid.Empty)];
+        
+        // Direct hit — most common case
+        if (context.VariantSlugMap.TryGetValue(slug, out var variantId))
+            return [(slug, variantId)];
+
+        // No direct hit — attempt fan-out
+        // Base slug is the item slug without wear/modifier suffixes
+        // e.g. "bayonet-gamma-doppler" from "bayonet-gamma-doppler-minimal-wear"
+        var baseSlug = CS2KaggleSlugHelper.BuildBaseSlug(weapon, skinName);
+
+        // Build the suffix that all matching variants must end with
+        // e.g. "-stattrak-minimal-wear" or just "-minimal-wear"
+        var wearSlug = CS2WearHelper.WearSlugs.GetValueOrDefault(wear, wear.ToLowerInvariant().Replace(" ", "-"));
+        var suffix = statTrak ? $"-stattrak-{wearSlug}"
+            : souvenir ? $"-souvenir-{wearSlug}"
+            : $"-{wearSlug}";
+
+        // Find all variant slugs that start with baseSlug and end with the correct suffix
+        // This matches e.g. "bayonet-gamma-doppler-568-minimal-wear"
+        var matches = context.VariantSlugMap
+            .Where(kvp => kvp.Key.StartsWith(baseSlug) && kvp.Key.EndsWith(suffix))
+            .Select(kvp => (kvp.Key, kvp.Value))
+            .ToList();
+
+        if (matches.Count == 0)
+        {
+            warnings.Add($"Could not resolve slug '{slug}' — no direct match or fan-out candidates found.");
+            return [];
+        }
+
+        warnings.Add($"Fan-out: '{slug}' resolved to {matches.Count} variant(s) via base slug '{baseSlug}'.");
+        return matches;
     }
 
     // ── Market hash name parsing ──────────────────────────────────────────────
@@ -222,7 +280,7 @@ public sealed class CS2KagglePriceFetcher : IFileFetcher
         // Strip "Souvenir" suffix
         if (souvenir)
             name = name.Replace("Souvenir", "", StringComparison.OrdinalIgnoreCase).Trim();
-        
+
         // Strip wear suffix "(Field-Tested)" etc.
         var wearStart = name.LastIndexOf('(');
         if (wearStart > 0)
