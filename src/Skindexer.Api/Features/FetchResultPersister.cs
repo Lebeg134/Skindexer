@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Npgsql;
 using Skindexer.Api.Features.Items;
@@ -66,10 +67,10 @@ public class FetchResultPersister : IFetchResultPersister
 
                 remapped.Add(new SkinVariant
                 {
-                    Id       = variant.Id,
-                    ItemId   = dbItemId,
-                    GameId   = variant.GameId,
-                    Slug     = variant.Slug,
+                    Id = variant.Id,
+                    ItemId = dbItemId,
+                    GameId = variant.GameId,
+                    Slug = variant.Slug,
                     Metadata = variant.Metadata,
                 });
             }
@@ -155,7 +156,33 @@ public class FetchResultPersister : IFetchResultPersister
                 return;
             }
 
-            await _prices.UpsertPricesAsync(resolved, ct);
+            const int batchSize = 50_000;
+
+            var totalBatches = (int)Math.Ceiling(resolved.Count / (double)batchSize);
+            var batchIndex = 0;
+
+            var timeLog = new List<long>();
+
+            foreach (var batch in resolved.Chunk(batchSize))
+            {
+                batchIndex++;
+                var sw = Stopwatch.StartNew();
+                await _prices.UpsertPricesAsync(batch, ct);
+                sw.Stop();
+                
+                timeLog.Add(sw.ElapsedMilliseconds);
+                var estimateTs = TimeSpan.FromMilliseconds(timeLog.Average()*(totalBatches - batchIndex));
+                var finishAt = DateTime.UtcNow.Add(estimateTs);
+                var estimateStr = estimateTs.TotalHours >= 1
+                    ? estimateTs.ToString(@"h\h\ m\m\ s\s")
+                    : estimateTs.TotalMinutes >= 1
+                        ? estimateTs.ToString(@"m\m\ s\s")
+                        : estimateTs.ToString(@"s\s");
+
+                _logger.LogInformation(
+                    "Price import progress — batch {Current}/{Total} complete ({Prices} prices, {Ms}ms) ETA: {FinishAt:HH:mm:ss} UTC, remaining: {Estimate}",
+                    batchIndex, totalBatches, batch.Length, sw.ElapsedMilliseconds, finishAt, estimateStr);
+            }
 
             _logger.LogInformation(
                 "Wrote {Count} prices for {GameId} ({Unresolved} dropped)",
