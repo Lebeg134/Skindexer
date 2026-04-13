@@ -20,6 +20,7 @@ public class PriceRepositoryTests(PostgresFixture fixture)
     {
         _db = new SkindexerDbContext(fixture.Options);
         await _db.Prices.ExecuteDeleteAsync();
+        await _db.Variants.ExecuteDeleteAsync();
         await _db.Items.ExecuteDeleteAsync();
 
         _repository = new PriceRepository(_db, fixture.DataSource, NullLogger<PriceRepository>.Instance);
@@ -52,6 +53,24 @@ public class PriceRepositoryTests(PostgresFixture fixture)
         _db.Items.Add(item);
         await _db.SaveChangesAsync();
         return item;
+    }
+
+    private async Task<SkinVariantEntity> SeedVariantAsync(
+        SkinItemEntity item,
+        string? slug = null)
+    {
+        var variant = new SkinVariantEntity
+        {
+            Id = Guid.NewGuid(),
+            ItemId = item.Id,
+            GameId = item.GameId,
+            Slug = slug ?? item.Slug,
+            Metadata = new Dictionary<string, object?>(),
+        };
+
+        _db.Variants.Add(variant);
+        await _db.SaveChangesAsync();
+        return variant;
     }
 
     private static SkinPrice BuildPrice(
@@ -88,12 +107,13 @@ public class PriceRepositoryTests(PostgresFixture fixture)
     public async Task GetCurrentPricesByGameAsync_ReturnsOnlyMostRecentSnapshot()
     {
         var item = await SeedItemAsync();
+        var variant = await SeedVariantAsync(item);
 
         var prices = new List<SkinPrice>
         {
-            BuildPrice(item.Id, item.Slug, price: 10m, recordedAt: new DateTime(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc)),
-            BuildPrice(item.Id, item.Slug, price: 11m, recordedAt: new DateTime(2021, 1, 2, 0, 0, 0, DateTimeKind.Utc)),
-            BuildPrice(item.Id, item.Slug, price: 12m, recordedAt: new DateTime(2021, 1, 3, 0, 0, 0, DateTimeKind.Utc)),
+            BuildPrice(variant.Id, variant.Slug, price: 10m, recordedAt: new DateTime(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc)),
+            BuildPrice(variant.Id, variant.Slug, price: 11m, recordedAt: new DateTime(2021, 1, 2, 0, 0, 0, DateTimeKind.Utc)),
+            BuildPrice(variant.Id, variant.Slug, price: 12m, recordedAt: new DateTime(2021, 1, 3, 0, 0, 0, DateTimeKind.Utc)),
         };
 
         await _repository.InsertPricesAsync(prices, CancellationToken.None);
@@ -109,16 +129,18 @@ public class PriceRepositoryTests(PostgresFixture fixture)
     {
         var item1 = await SeedItemAsync(slug: "ak-47-redline");
         var item2 = await SeedItemAsync(slug: "m4a4-howl");
+        var variant1 = await SeedVariantAsync(item1);
+        var variant2 = await SeedVariantAsync(item2);
 
         var prices = new List<SkinPrice>
         {
-            BuildPrice(item1.Id, item1.Slug, price: 10m,
+            BuildPrice(variant1.Id, variant1.Slug, price: 10m,
                 recordedAt: new DateTime(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc)),
-            BuildPrice(item1.Id, item1.Slug, price: 15m,
+            BuildPrice(variant1.Id, variant1.Slug, price: 15m,
                 recordedAt: new DateTime(2021, 1, 2, 0, 0, 0, DateTimeKind.Utc)),
-            BuildPrice(item2.Id, item2.Slug, price: 500m,
+            BuildPrice(variant2.Id, variant2.Slug, price: 500m,
                 recordedAt: new DateTime(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc)),
-            BuildPrice(item2.Id, item2.Slug, price: 550m,
+            BuildPrice(variant2.Id, variant2.Slug, price: 550m,
                 recordedAt: new DateTime(2021, 1, 2, 0, 0, 0, DateTimeKind.Utc)),
         };
 
@@ -127,19 +149,22 @@ public class PriceRepositoryTests(PostgresFixture fixture)
         var result = await _repository.GetCurrentPricesByGameAsync("cs2", CancellationToken.None);
 
         Assert.Equal(2, result.Count);
-        Assert.Contains(result, p => p.VariantId == item1.Id && p.Price == 15m);
-        Assert.Contains(result, p => p.VariantId == item2.Id && p.Price == 550m);
+        Assert.Contains(result, p => p.VariantId == variant1.Id && p.Price == 15m);
+        Assert.Contains(result, p => p.VariantId == variant2.Id && p.Price == 550m);
     }
 
     [Fact]
     public async Task GetCurrentPricesByGameAsync_MultipleSources_ReturnsMostRecentPerSource()
     {
         var item = await SeedItemAsync();
+        var variant = await SeedVariantAsync(item);
 
         var prices = new List<SkinPrice>
         {
-            BuildPrice(item.Id, item.Slug, price: 10m, recordedAt: new DateTime(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc)),
-            BuildPrice(item.Id, item.Slug, price: 11m, recordedAt: new DateTime(2021, 1, 2, 0, 0, 0, DateTimeKind.Utc),
+            BuildPrice(variant.Id, variant.Slug, price: 10m,
+                recordedAt: new DateTime(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc)),
+            BuildPrice(variant.Id, variant.Slug, price: 11m,
+                recordedAt: new DateTime(2021, 1, 2, 0, 0, 0, DateTimeKind.Utc),
                 source: "steam-market"),
         };
 
@@ -157,11 +182,13 @@ public class PriceRepositoryTests(PostgresFixture fixture)
     {
         var cs2Item = await SeedItemAsync(slug: "ak-47-redline", gameId: "cs2");
         var tf2Item = await SeedItemAsync(slug: "ak-47-redline", gameId: "tf2");
+        var cs2Variant = await SeedVariantAsync(cs2Item);
+        var tf2Variant = await SeedVariantAsync(tf2Item);
 
         var prices = new List<SkinPrice>
         {
-            BuildPrice(cs2Item.Id, cs2Item.Slug, price: 10m),
-            BuildPrice(tf2Item.Id, tf2Item.Slug, price: 99m),
+            BuildPrice(cs2Variant.Id, cs2Variant.Slug, price: 10m),
+            BuildPrice(tf2Variant.Id, tf2Variant.Slug, price: 99m),
         };
 
         await _repository.InsertPricesAsync(prices, CancellationToken.None);
@@ -169,7 +196,7 @@ public class PriceRepositoryTests(PostgresFixture fixture)
         var result = await _repository.GetCurrentPricesByGameAsync("cs2", CancellationToken.None);
 
         Assert.Single(result);
-        Assert.Equal(cs2Item.Id, result[0].VariantId);
+        Assert.Equal(cs2Variant.Id, result[0].VariantId);
     }
 
     #endregion
@@ -193,12 +220,13 @@ public class PriceRepositoryTests(PostgresFixture fixture)
     public async Task UpsertPricesAsync_NewPrices_InsertsAllRows()
     {
         var item = await SeedItemAsync();
+        var variant = await SeedVariantAsync(item);
 
         var prices = new List<SkinPrice>
         {
-            BuildPrice(item.Id, item.Slug, price: 10m, recordedAt: new DateTime(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc)),
-            BuildPrice(item.Id, item.Slug, price: 11m, recordedAt: new DateTime(2021, 1, 2, 0, 0, 0, DateTimeKind.Utc)),
-            BuildPrice(item.Id, item.Slug, price: 12m, recordedAt: new DateTime(2021, 1, 3, 0, 0, 0, DateTimeKind.Utc)),
+            BuildPrice(variant.Id, variant.Slug, price: 10m, recordedAt: new DateTime(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc)),
+            BuildPrice(variant.Id, variant.Slug, price: 11m, recordedAt: new DateTime(2021, 1, 2, 0, 0, 0, DateTimeKind.Utc)),
+            BuildPrice(variant.Id, variant.Slug, price: 12m, recordedAt: new DateTime(2021, 1, 3, 0, 0, 0, DateTimeKind.Utc)),
         };
 
         await _repository.UpsertPricesAsync(prices, CancellationToken.None);
@@ -214,10 +242,11 @@ public class PriceRepositoryTests(PostgresFixture fixture)
     public async Task UpsertPricesAsync_NullVolume_InsertsWithoutError()
     {
         var item = await SeedItemAsync();
+        var variant = await SeedVariantAsync(item);
 
         var prices = new List<SkinPrice>
         {
-            BuildPrice(item.Id, item.Slug, volume: null),
+            BuildPrice(variant.Id, variant.Slug, volume: null),
         };
 
         await _repository.UpsertPricesAsync(prices, CancellationToken.None);
@@ -231,19 +260,21 @@ public class PriceRepositoryTests(PostgresFixture fixture)
     {
         var item1 = await SeedItemAsync(slug: "ak-47-redline");
         var item2 = await SeedItemAsync(slug: "m4a4-howl");
+        var variant1 = await SeedVariantAsync(item1);
+        var variant2 = await SeedVariantAsync(item2);
 
         var prices = new List<SkinPrice>
         {
-            BuildPrice(item1.Id, item1.Slug, price: 10m),
-            BuildPrice(item2.Id, item2.Slug, price: 500m),
+            BuildPrice(variant1.Id, variant1.Slug, price: 10m),
+            BuildPrice(variant2.Id, variant2.Slug, price: 500m),
         };
 
         await _repository.UpsertPricesAsync(prices, CancellationToken.None);
 
         var stored = await _db.Prices.ToListAsync();
         Assert.Equal(2, stored.Count);
-        Assert.Contains(stored, p => p.VariantId == item1.Id && p.Price == 10m);
-        Assert.Contains(stored, p => p.VariantId == item2.Id && p.Price == 500m);
+        Assert.Contains(stored, p => p.VariantId == variant1.Id && p.Price == 10m);
+        Assert.Contains(stored, p => p.VariantId == variant2.Id && p.Price == 500m);
     }
 
     #endregion
@@ -254,10 +285,11 @@ public class PriceRepositoryTests(PostgresFixture fixture)
     public async Task UpsertPricesAsync_ReImport_SameData_DoesNotDuplicate()
     {
         var item = await SeedItemAsync();
+        var variant = await SeedVariantAsync(item);
 
         var prices = new List<SkinPrice>
         {
-            BuildPrice(item.Id, item.Slug),
+            BuildPrice(variant.Id, variant.Slug),
         };
 
         await _repository.UpsertPricesAsync(prices, CancellationToken.None);
@@ -271,15 +303,16 @@ public class PriceRepositoryTests(PostgresFixture fixture)
     public async Task UpsertPricesAsync_ReImport_SameSnapshot_IsIgnored()
     {
         var item = await SeedItemAsync();
+        var variant = await SeedVariantAsync(item);
 
         var original = new List<SkinPrice>
         {
-            BuildPrice(item.Id, item.Slug, price: 10m, volume: 100),
+            BuildPrice(variant.Id, variant.Slug, price: 10m, volume: 100),
         };
 
         var duplicate = new List<SkinPrice>
         {
-            BuildPrice(item.Id, item.Slug, price: 15m, volume: 200),
+            BuildPrice(variant.Id, variant.Slug, price: 15m, volume: 200),
         };
 
         await _repository.UpsertPricesAsync(original, CancellationToken.None);
@@ -294,13 +327,14 @@ public class PriceRepositoryTests(PostgresFixture fixture)
     public async Task UpsertPricesAsync_DuplicatesInSameBatch_LastOneWins()
     {
         var item = await SeedItemAsync();
+        var variant = await SeedVariantAsync(item);
         var recordedAt = new DateTime(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
         // Same natural key twice in one batch — in-memory dedup should keep the last
         var prices = new List<SkinPrice>
         {
-            BuildPrice(item.Id, item.Slug, price: 10m, recordedAt: recordedAt),
-            BuildPrice(item.Id, item.Slug, price: 99m, recordedAt: recordedAt),
+            BuildPrice(variant.Id, variant.Slug, price: 10m, recordedAt: recordedAt),
+            BuildPrice(variant.Id, variant.Slug, price: 99m, recordedAt: recordedAt),
         };
 
         await _repository.UpsertPricesAsync(prices, CancellationToken.None);

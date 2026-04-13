@@ -25,13 +25,14 @@ public class PriceRepository : IPriceRepository
         CancellationToken ct = default)
     {
         const string sql = """
-                           SELECT DISTINCT ON (p.item_id, p.slug, p.source, p.price_type)
-                               p.item_id, p.slug, p.source, p.price_type,
+                           SELECT DISTINCT ON (p.variant_id, p.source, p.price_type)
+                               p.variant_id, p.slug, p.source, p.price_type,
                                p.price, p.currency, p.volume, p.recorded_at
                            FROM price_snapshots p
-                           INNER JOIN items i ON i.id = p.item_id
+                           INNER JOIN variants v ON v.id = p.variant_id
+                           INNER JOIN items i ON i.id = v.item_id
                            WHERE i.game_id = {0}
-                           ORDER BY p.item_id, p.slug, p.source, p.price_type, p.recorded_at DESC
+                           ORDER BY p.variant_id, p.source, p.price_type, p.recorded_at DESC
                            """;
 
         return await _db.Database
