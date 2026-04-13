@@ -1,3 +1,4 @@
+using Skindexer.Api.Features.Variants;
 using Skindexer.Fetchers.Games.CS2.Fetchers;
 using Skindexer.Fetchers.Interfaces;
 
@@ -20,8 +21,11 @@ public static class CS2KaggleImportEndpoints
 
                 var fetcher = scope.ServiceProvider.GetRequiredService<CS2KagglePriceFetcher>();
                 var persister = scope.ServiceProvider.GetRequiredService<IFetchResultPersister>();
+                var variantRepo = scope.ServiceProvider.GetRequiredService<IVariantRepository>();
 
-                var result = await fetcher.FetchAsync();
+                var slugMap = await variantRepo.GetSlugToVariantIdMapAsync("cs2", CancellationToken.None);
+                var result = await fetcher.FetchAsync(new CS2KaggleFetchContext { VariantSlugMap = slugMap }, CancellationToken.None);
+
 
                  if (!result.IsSuccess)
                 {
