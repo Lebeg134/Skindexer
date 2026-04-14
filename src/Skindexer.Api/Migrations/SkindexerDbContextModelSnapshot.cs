@@ -272,9 +272,9 @@ namespace Skindexer.Api.Migrations
                     b.HasIndex("ItemId")
                         .HasDatabaseName("ix_variants_item_id");
 
-                    b.HasIndex("Slug")
+                    b.HasIndex("GameId", "Slug")
                         .IsUnique()
-                        .HasDatabaseName("ix_variants_slug");
+                        .HasDatabaseName("ix_variants_game_id_slug");
 
                     b.ToTable("variants", (string)null);
                 });

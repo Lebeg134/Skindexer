@@ -13,7 +13,7 @@ using Skindexer.Api.Data;
 namespace Skindexer.Api.Migrations
 {
     [DbContext(typeof(SkindexerDbContext))]
-    [Migration("20260409171932_InitialCreate")]
+    [Migration("20260414093802_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -275,9 +275,9 @@ namespace Skindexer.Api.Migrations
                     b.HasIndex("ItemId")
                         .HasDatabaseName("ix_variants_item_id");
 
-                    b.HasIndex("Slug")
+                    b.HasIndex("GameId", "Slug")
                         .IsUnique()
-                        .HasDatabaseName("ix_variants_slug");
+                        .HasDatabaseName("ix_variants_game_id_slug");
 
                     b.ToTable("variants", (string)null);
                 });

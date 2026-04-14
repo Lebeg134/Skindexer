@@ -161,15 +161,15 @@ namespace Skindexer.Api.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "ix_variants_game_id_slug",
+                table: "variants",
+                columns: new[] { "game_id", "slug" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "ix_variants_item_id",
                 table: "variants",
                 column: "item_id");
-
-            migrationBuilder.CreateIndex(
-                name: "ix_variants_slug",
-                table: "variants",
-                column: "slug",
-                unique: true);
         }
 
         /// <inheritdoc />
