@@ -26,7 +26,7 @@ public class SkinVariantConfiguration : IEntityTypeConfiguration<SkinVariantEnti
         builder.Property(x => x.Metadata)
             .HasColumnType("jsonb");
 
-        builder.HasIndex(x => x.Slug)
+        builder.HasIndex(x  => new { x.GameId, x.Slug })
             .IsUnique();
 
         builder.HasOne(x => x.Item)
