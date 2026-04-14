@@ -94,7 +94,7 @@ public class CS2KagglePriceFetcherTests
     }
 
     [Fact]
-    public async Task FetchAsync_ValidDataPath_AllPricesHaveGuidEmptyItemId()
+    public async Task FetchAsync_ValidDataPath_AllPricesHaveGuidEmptyVariantId()
     {
         var fetcher = CreateFetcher(GetTestDataPath());
 
