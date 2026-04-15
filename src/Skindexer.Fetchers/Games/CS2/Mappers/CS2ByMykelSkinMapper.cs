@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Skindexer.Contracts.Models;
+using Skindexer.Contracts.Models.Metadata;
 using Skindexer.Fetchers.Games.CS2.Fetchers.DTOs;
-using Skindexer.Fetchers.Games.CS2.Metadata;
 using Skindexer.Fetchers.Games.CS2.SlugHelpers;
 
 namespace Skindexer.Fetchers.Games.CS2.Mappers;

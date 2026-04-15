@@ -1,6 +1,6 @@
-namespace Skindexer.Fetchers.Games.CS2.Metadata;
+namespace Skindexer.Contracts.Models.Metadata;
 
-public class CS2KeyMetadata
+public class CS2PatchMetadata
 {
     public string? Rarity { get; init; }
     public string? RarityColor { get; init; }

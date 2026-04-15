@@ -1,4 +1,4 @@
-namespace Skindexer.Fetchers.Games.CS2.Metadata;
+namespace Skindexer.Contracts.Models.Metadata;
 
 public class CS2StickerMetadata
 {
