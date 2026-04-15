@@ -5,10 +5,10 @@ using Skindexer.Api.Data;
 using Skindexer.Api.Data.Repositories;
 using Skindexer.Api.Features;
 using Skindexer.Api.Features.Collections;
-using Skindexer.Api.Features.Grades;
 using Skindexer.Api.Features.Import;
 using Skindexer.Api.Features.Items;
 using Skindexer.Api.Features.Prices;
+using Skindexer.Api.Features.Rarity;
 using Skindexer.Api.Features.Variants;
 using Skindexer.Fetchers;
 using Skindexer.Fetchers.Interfaces;
@@ -38,7 +38,7 @@ services.AddDbContext<SkindexerDbContext>(options =>
 services.AddScoped<IItemRepository, ItemRepository>();
 services.AddScoped<IPriceRepository, PriceRepository>();
 services.AddScoped<ICollectionRepository, CollectionRepository>();
-services.AddScoped<IGradeRepository, GradeRepository>();
+services.AddScoped<IRarityRepository, RarityRepository>();
 services.AddScoped<IVariantRepository, VariantRepository>();
 
 services.AddScoped<IFetchResultPersister, FetchResultPersister>();
@@ -56,7 +56,7 @@ app.UseHttpsRedirection();
 GetItemsEndpoint.MapEndpoint(app);
 GetPricesEndpoint.MapEndpoint(app);
 GetCollectionsEndpoint.MapEndpoint(app);
-GetGradesEndpoint.MapEndpoint(app);
+GetRaritiesEndpoint.MapEndpoint(app);
 
 CS2KaggleImportEndpoints.MapEndpoint(app);
 

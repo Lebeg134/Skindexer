@@ -58,7 +58,7 @@ namespace Skindexer.Api.Migrations
                     b.ToTable("collections", (string)null);
                 });
 
-            modelBuilder.Entity("Skindexer.Api.Data.Entities.GradeEntity", b =>
+            modelBuilder.Entity("Skindexer.Api.Data.Entities.RarityEntity", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -77,9 +77,13 @@ namespace Skindexer.Api.Migrations
                         .HasColumnType("character varying(256)")
                         .HasColumnName("name");
 
-                    b.Property<int>("Order")
+                    b.Property<int?>("Order")
                         .HasColumnType("integer")
                         .HasColumnName("order");
+
+                    b.Property<Guid?>("RarityGroupId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("rarity_group_id");
 
                     b.Property<string>("Slug")
                         .IsRequired()
@@ -88,17 +92,51 @@ namespace Skindexer.Api.Migrations
                         .HasColumnName("slug");
 
                     b.HasKey("Id")
-                        .HasName("pk_grades");
+                        .HasName("pk_rarities");
 
-                    b.HasIndex("GameId", "Order")
-                        .IsUnique()
-                        .HasDatabaseName("ix_grades_game_id_order");
+                    b.HasIndex("RarityGroupId")
+                        .HasDatabaseName("ix_rarities_rarity_group_id");
 
                     b.HasIndex("GameId", "Slug")
                         .IsUnique()
-                        .HasDatabaseName("ix_grades_game_id_slug");
+                        .HasDatabaseName("ix_rarities_game_id_slug");
 
-                    b.ToTable("grades", (string)null);
+                    b.ToTable("rarities", (string)null);
+                });
+
+            modelBuilder.Entity("Skindexer.Api.Data.Entities.RarityGroupEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("GameId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("game_id");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("slug");
+
+                    b.HasKey("Id")
+                        .HasName("pk_rarity_groups");
+
+                    b.HasIndex("GameId", "Slug")
+                        .IsUnique()
+                        .HasDatabaseName("ix_rarity_groups_game_id_slug");
+
+                    b.ToTable("rarity_groups", (string)null);
                 });
 
             modelBuilder.Entity("Skindexer.Api.Data.Entities.SkinItemEntity", b =>
@@ -126,10 +164,6 @@ namespace Skindexer.Api.Migrations
                         .HasColumnType("character varying(64)")
                         .HasColumnName("game_id");
 
-                    b.Property<Guid?>("GradeId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("grade_id");
-
                     b.Property<string>("ImageUrl")
                         .HasMaxLength(1024)
                         .HasColumnType("character varying(1024)")
@@ -154,6 +188,10 @@ namespace Skindexer.Api.Migrations
                         .HasColumnType("character varying(256)")
                         .HasColumnName("name");
 
+                    b.Property<Guid?>("RarityId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("rarity_id");
+
                     b.Property<string>("Slug")
                         .IsRequired()
                         .HasMaxLength(256)
@@ -170,8 +208,8 @@ namespace Skindexer.Api.Migrations
                     b.HasIndex("CollectionId")
                         .HasDatabaseName("ix_items_collection_id");
 
-                    b.HasIndex("GradeId")
-                        .HasDatabaseName("ix_items_grade_id");
+                    b.HasIndex("RarityId")
+                        .HasDatabaseName("ix_items_rarity_id");
 
                     b.HasIndex("GameId", "Slug")
                         .IsUnique()
@@ -279,6 +317,16 @@ namespace Skindexer.Api.Migrations
                     b.ToTable("variants", (string)null);
                 });
 
+            modelBuilder.Entity("Skindexer.Api.Data.Entities.RarityEntity", b =>
+                {
+                    b.HasOne("Skindexer.Api.Data.Entities.RarityGroupEntity", "RarityGroup")
+                        .WithMany("Rarities")
+                        .HasForeignKey("RarityGroupId")
+                        .HasConstraintName("fk_rarities_rarity_groups_rarity_group_id");
+
+                    b.Navigation("RarityGroup");
+                });
+
             modelBuilder.Entity("Skindexer.Api.Data.Entities.SkinItemEntity", b =>
                 {
                     b.HasOne("Skindexer.Api.Data.Entities.CollectionEntity", "Collection")
@@ -286,14 +334,14 @@ namespace Skindexer.Api.Migrations
                         .HasForeignKey("CollectionId")
                         .HasConstraintName("fk_items_collections_collection_id");
 
-                    b.HasOne("Skindexer.Api.Data.Entities.GradeEntity", "Grade")
+                    b.HasOne("Skindexer.Api.Data.Entities.RarityEntity", "Rarity")
                         .WithMany("Items")
-                        .HasForeignKey("GradeId")
-                        .HasConstraintName("fk_items_grades_grade_id");
+                        .HasForeignKey("RarityId")
+                        .HasConstraintName("fk_items_rarities_rarity_id");
 
                     b.Navigation("Collection");
 
-                    b.Navigation("Grade");
+                    b.Navigation("Rarity");
                 });
 
             modelBuilder.Entity("Skindexer.Api.Data.Entities.SkinPriceEntity", b =>
@@ -325,9 +373,14 @@ namespace Skindexer.Api.Migrations
                     b.Navigation("Items");
                 });
 
-            modelBuilder.Entity("Skindexer.Api.Data.Entities.GradeEntity", b =>
+            modelBuilder.Entity("Skindexer.Api.Data.Entities.RarityEntity", b =>
                 {
                     b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("Skindexer.Api.Data.Entities.RarityGroupEntity", b =>
+                {
+                    b.Navigation("Rarities");
                 });
 
             modelBuilder.Entity("Skindexer.Api.Data.Entities.SkinItemEntity", b =>

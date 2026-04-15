@@ -11,7 +11,8 @@ public class SkindexerDbContext : DbContext
     public DbSet<SkinVariantEntity> Variants => Set<SkinVariantEntity>();
     public DbSet<SkinPriceEntity> Prices => Set<SkinPriceEntity>();
     public DbSet<CollectionEntity> Collections => Set<CollectionEntity>();
-    public DbSet<GradeEntity> Grades => Set<GradeEntity>();
+    public DbSet<RarityEntity> Rarities => Set<RarityEntity>();
+    public DbSet<RarityGroupEntity> RarityGroups => Set<RarityGroupEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
