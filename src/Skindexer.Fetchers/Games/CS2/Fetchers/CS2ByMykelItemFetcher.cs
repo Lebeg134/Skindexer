@@ -1,9 +1,9 @@
 using System.Net.Http.Json;
 using System.Text.Json;
 using Skindexer.Contracts.Models;
+using Skindexer.Contracts.Models.Metadata;
 using Skindexer.Fetchers.Games.CS2.Fetchers.DTOs;
 using Skindexer.Fetchers.Games.CS2.Mappers;
-using Skindexer.Fetchers.Games.CS2.Metadata;
 using Skindexer.Fetchers.Games.CS2.SlugHelpers;
 using Skindexer.Fetchers.Interfaces;
 
