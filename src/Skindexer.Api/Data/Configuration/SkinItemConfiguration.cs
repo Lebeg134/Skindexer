@@ -37,7 +37,7 @@ public class SkinItemConfiguration : IEntityTypeConfiguration<SkinItemEntity>
             .IsRequired();
 
         builder.Property(x => x.CollectionId);
-        builder.Property(x => x.GradeId);
+        builder.Property(x => x.RarityId);
 
         builder.HasIndex(x => new { x.GameId, x.Slug })
             .IsUnique();
@@ -51,9 +51,9 @@ public class SkinItemConfiguration : IEntityTypeConfiguration<SkinItemEntity>
             .HasForeignKey(x => x.CollectionId)
             .IsRequired(false);
 
-        builder.HasOne(x => x.Grade)
+        builder.HasOne(x => x.Rarity)
             .WithMany(x => x.Items)
-            .HasForeignKey(x => x.GradeId)
+            .HasForeignKey(x => x.RarityId)
             .IsRequired(false);
     }
 }

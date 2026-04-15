@@ -27,18 +27,38 @@ namespace Skindexer.Api.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "grades",
+                name: "rarity_groups",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    game_id = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
+                    slug = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
+                    name = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_rarity_groups", x => x.id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "rarities",
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     game_id = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
                     slug = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
                     name = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
-                    order = table.Column<int>(type: "integer", nullable: false)
+                    order = table.Column<int>(type: "integer", nullable: true),
+                    rarity_group_id = table.Column<Guid>(type: "uuid", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_grades", x => x.id);
+                    table.PrimaryKey("pk_rarities", x => x.id);
+                    table.ForeignKey(
+                        name: "fk_rarities_rarity_groups_rarity_group_id",
+                        column: x => x.rarity_group_id,
+                        principalTable: "rarity_groups",
+                        principalColumn: "id");
                 });
 
             migrationBuilder.CreateTable(
@@ -57,7 +77,7 @@ namespace Skindexer.Api.Migrations
                     created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     collection_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    grade_id = table.Column<Guid>(type: "uuid", nullable: true)
+                    rarity_id = table.Column<Guid>(type: "uuid", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -68,9 +88,9 @@ namespace Skindexer.Api.Migrations
                         principalTable: "collections",
                         principalColumn: "id");
                     table.ForeignKey(
-                        name: "fk_items_grades_grade_id",
-                        column: x => x.grade_id,
-                        principalTable: "grades",
+                        name: "fk_items_rarities_rarity_id",
+                        column: x => x.rarity_id,
+                        principalTable: "rarities",
                         principalColumn: "id");
                 });
 
@@ -127,18 +147,6 @@ namespace Skindexer.Api.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "ix_grades_game_id_order",
-                table: "grades",
-                columns: new[] { "game_id", "order" },
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "ix_grades_game_id_slug",
-                table: "grades",
-                columns: new[] { "game_id", "slug" },
-                unique: true);
-
-            migrationBuilder.CreateIndex(
                 name: "ix_items_collection_id",
                 table: "items",
                 column: "collection_id");
@@ -150,14 +158,31 @@ namespace Skindexer.Api.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "ix_items_grade_id",
+                name: "ix_items_rarity_id",
                 table: "items",
-                column: "grade_id");
+                column: "rarity_id");
 
             migrationBuilder.CreateIndex(
                 name: "ix_price_snapshots_variant_id_source_price_type_recorded_at",
                 table: "price_snapshots",
                 columns: new[] { "variant_id", "source", "price_type", "recorded_at" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "ix_rarities_game_id_slug",
+                table: "rarities",
+                columns: new[] { "game_id", "slug" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "ix_rarities_rarity_group_id",
+                table: "rarities",
+                column: "rarity_group_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_rarity_groups_game_id_slug",
+                table: "rarity_groups",
+                columns: new[] { "game_id", "slug" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -188,7 +213,10 @@ namespace Skindexer.Api.Migrations
                 name: "collections");
 
             migrationBuilder.DropTable(
-                name: "grades");
+                name: "rarities");
+
+            migrationBuilder.DropTable(
+                name: "rarity_groups");
         }
     }
 }

@@ -17,8 +17,8 @@ public class SkinItemEntity
     public Guid? CollectionId { get; set; }
     public CollectionEntity? Collection { get; set; }
 
-    public Guid? GradeId { get; set; }
-    public GradeEntity? Grade { get; set; }
+    public Guid? RarityId { get; set; }
+    public RarityEntity? Rarity { get; set; }
 
     public ICollection<SkinVariantEntity> Variants { get; set; } = [];
 }

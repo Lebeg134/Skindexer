@@ -4,11 +4,11 @@ using Skindexer.Api.Data.Entities;
 
 namespace Skindexer.Api.Data.Configuration;
 
-public class GradeConfiguration : IEntityTypeConfiguration<GradeEntity>
+public class RarityGroupConfiguration : IEntityTypeConfiguration<RarityGroupEntity>
 {
-    public void Configure(EntityTypeBuilder<GradeEntity> builder)
+    public void Configure(EntityTypeBuilder<RarityGroupEntity> builder)
     {
-        builder.ToTable("grades");
+        builder.ToTable("rarity_groups");
 
         builder.HasKey(x => x.Id);
 
@@ -24,18 +24,7 @@ public class GradeConfiguration : IEntityTypeConfiguration<GradeEntity>
             .IsRequired()
             .HasMaxLength(256);
 
-        builder.Property(x => x.Order)
-            .IsRequired();
-
         builder.HasIndex(x => new { x.GameId, x.Slug })
             .IsUnique();
-
-        builder.HasIndex(x => new { x.GameId, x.Order })
-            .IsUnique();
-
-        builder.HasMany(x => x.Items)
-            .WithOne(x => x.Grade)
-            .HasForeignKey(x => x.GradeId)
-            .IsRequired(false);
     }
 }
