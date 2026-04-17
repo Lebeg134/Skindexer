@@ -7,7 +7,7 @@ using Skindexer.Fetchers.Games.CS2.SlugHelpers;
 namespace Skindexer.Fetchers.Games.CS2.Mappers;
 
 public class CS2ByMykelSkinMapper(ILogger<CS2ByMykelSkinMapper> logger)
-    : CS2ByMykelMapperBase<ByMykelSkin>(logger, "skins.json")
+    : CS2ByMykelMapperBase<ByMykelSkin>(logger, "skins.json", CS2ItemTypes.WeaponSkin)
 {
     protected override string? GetName(ByMykelSkin dto) => dto.Name;
     protected override string? GetDiscriminator(ByMykelSkin dto) => dto.PaintIndex;
@@ -39,6 +39,7 @@ public class CS2ByMykelSkinMapper(ILogger<CS2ByMykelSkinMapper> logger)
         {
             Id = Guid.NewGuid(),
             GameId = "cs2",
+            ItemType = ItemType,
             Slug = slug,
             Name = dto.Name,
             ImageUrl = dto.Image,

@@ -6,7 +6,7 @@ using Skindexer.Fetchers.Games.CS2.Fetchers.DTOs;
 namespace Skindexer.Fetchers.Games.CS2.Mappers;
 
 public class CS2ByMykelCollectibleMapper(ILogger<CS2ByMykelCollectibleMapper> logger)
-    : CS2ByMykelMapperBase<ByMykelCollectible>(logger, "collectibles.json")
+    : CS2ByMykelMapperBase<ByMykelCollectible>(logger, "collectibles.json", CS2ItemTypes.Collectible)
 {
     protected override string? GetName(ByMykelCollectible dto) => dto.Name;
     protected override string? GetDiscriminator(ByMykelCollectible dto) => dto.DefIndex;
@@ -29,6 +29,7 @@ public class CS2ByMykelCollectibleMapper(ILogger<CS2ByMykelCollectibleMapper> lo
         {
             Id = Guid.NewGuid(),
             GameId = "cs2",
+            ItemType = ItemType,
             Slug = slug,
             Name = dto.Name,
             ImageUrl = dto.Image,

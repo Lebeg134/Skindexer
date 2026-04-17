@@ -15,6 +15,10 @@ public class SkinItemConfiguration : IEntityTypeConfiguration<SkinItemEntity>
         builder.Property(x => x.GameId)
             .IsRequired()
             .HasMaxLength(64);
+        
+        builder.Property(x => x.ItemType)
+            .IsRequired()
+            .HasMaxLength(256);
 
         builder.Property(x => x.Slug)
             .IsRequired()

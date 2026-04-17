@@ -8,11 +8,13 @@ public abstract class CS2ByMykelMapperBase<TDto>
 {
     private readonly ILogger _logger;
     private readonly string _filename;
+    protected readonly string ItemType;
 
-    protected CS2ByMykelMapperBase(ILogger logger, string filename)
+    protected CS2ByMykelMapperBase(ILogger logger, string filename, string itemType)
     {
         _logger = logger;
         _filename = filename;
+        ItemType = itemType;
     }
 
     public MapResult Map(IReadOnlyList<TDto> dtos, List<string> warnings)
