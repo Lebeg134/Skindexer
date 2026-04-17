@@ -7,7 +7,7 @@ using Skindexer.Fetchers.Games.CS2.Mappers;
 namespace Skindexer.Fetchers.Games.CS2.Mappers;
 
 public class CS2ByMykelMusicKitMapper(ILogger<CS2ByMykelMusicKitMapper> logger)
-    : CS2ByMykelMapperBase<ByMykelMusicKit>(logger, "music_kits.json")
+    : CS2ByMykelMapperBase<ByMykelMusicKit>(logger, "music_kits.json", CS2ItemTypes.MusicKit)
 {
     protected override string? GetName(ByMykelMusicKit dto) => dto.Name;
     protected override string? GetDiscriminator(ByMykelMusicKit dto) => dto.DefIndex;
@@ -28,6 +28,7 @@ public class CS2ByMykelMusicKitMapper(ILogger<CS2ByMykelMusicKitMapper> logger)
         {
             Id = Guid.NewGuid(),
             GameId = "cs2",
+            ItemType = ItemType,
             Slug = slug,
             Name = dto.Name,
             ImageUrl = dto.Image,

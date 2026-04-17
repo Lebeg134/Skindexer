@@ -13,7 +13,7 @@ using Skindexer.Api.Data;
 namespace Skindexer.Api.Migrations
 {
     [DbContext(typeof(SkindexerDbContext))]
-    [Migration("20260417200340_InitialCreate")]
+    [Migration("20260417213008_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -186,6 +186,12 @@ namespace Skindexer.Api.Migrations
                     b.Property<bool>("IsTradeable")
                         .HasColumnType("boolean")
                         .HasColumnName("is_tradeable");
+
+                    b.Property<string>("ItemType")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("item_type");
 
                     b.Property<Dictionary<string, object>>("Metadata")
                         .IsRequired()

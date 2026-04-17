@@ -13,7 +13,7 @@ public class ItemRepository : IItemRepository
     private readonly NpgsqlDataSource _dataSource;
     private readonly ILogger<ItemRepository> _logger;
 
-    public ItemRepository(SkindexerDbContext db, NpgsqlDataSource dataSource,  ILogger<ItemRepository> logger)
+    public ItemRepository(SkindexerDbContext db, NpgsqlDataSource dataSource, ILogger<ItemRepository> logger)
     {
         _db = db;
         _logger = logger;
@@ -28,6 +28,7 @@ public class ItemRepository : IItemRepository
             {
                 Id = i.Id,
                 GameId = i.GameId,
+                ItemType = i.ItemType,
                 Slug = i.Slug,
                 Name = i.Name,
                 ImageUrl = i.ImageUrl,
@@ -63,6 +64,7 @@ public class ItemRepository : IItemRepository
                                   CREATE TEMP TABLE items_staging (
                                       id               uuid,
                                       game_id          varchar(64),
+                                      item_type        varchar(64),
                                       slug             varchar(256),
                                       name             varchar(256),
                                       image_url        text,
@@ -79,7 +81,7 @@ public class ItemRepository : IItemRepository
 
             // Step 2 — Binary COPY into staging
             await using (var writer = await conn.BeginBinaryImportAsync(
-                             "COPY items_staging (id, game_id, slug, name, image_url, is_tradeable, is_marketable, metadata, added_to_game_at, created_at, updated_at) FROM STDIN (FORMAT BINARY)",
+                             "COPY items_staging (id, game_id, item_type, slug, name, image_url, is_tradeable, is_marketable, metadata, added_to_game_at, created_at, updated_at) FROM STDIN (FORMAT BINARY)",
                              ct))
             {
                 var now = DateTime.UtcNow;
@@ -89,6 +91,7 @@ public class ItemRepository : IItemRepository
                     await writer.StartRowAsync(ct);
                     await writer.WriteAsync(item.Id, NpgsqlDbType.Uuid, ct);
                     await writer.WriteAsync(item.GameId, NpgsqlDbType.Varchar, ct);
+                    await writer.WriteAsync(item.ItemType, NpgsqlDbType.Varchar, ct);
                     await writer.WriteAsync(item.Slug, NpgsqlDbType.Varchar, ct);
                     await writer.WriteAsync(item.Name, NpgsqlDbType.Varchar, ct);
                     await writer.WriteNullableAsync(item.ImageUrl, NpgsqlDbType.Text, ct);
@@ -110,10 +113,11 @@ public class ItemRepository : IItemRepository
             {
                 upsertCmd.Transaction = transaction;
                 upsertCmd.CommandText = """
-                                        INSERT INTO items (id, game_id, slug, name, image_url, is_tradeable, is_marketable, metadata, added_to_game_at, created_at, updated_at)
-                                        SELECT id, game_id, slug, name, image_url, is_tradeable, is_marketable, metadata::jsonb, added_to_game_at, created_at, updated_at
+                                        INSERT INTO items (id, game_id, item_type, slug, name, image_url, is_tradeable, is_marketable, metadata, added_to_game_at, created_at, updated_at)
+                                        SELECT id, game_id, item_type, slug, name, image_url, is_tradeable, is_marketable, metadata::jsonb, added_to_game_at, created_at, updated_at
                                         FROM items_staging
                                         ON CONFLICT (game_id, slug) DO UPDATE SET
+                                            item_type        = EXCLUDED.item_type,
                                             name             = EXCLUDED.name,
                                             image_url        = EXCLUDED.image_url,
                                             is_tradeable     = EXCLUDED.is_tradeable,

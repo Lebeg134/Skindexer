@@ -173,7 +173,7 @@ public class CS2ByMykelItemFetcher : IScheduledFetcher
             Collection = dto.Collections?.FirstOrDefault()?.Name,
         };
 
-        return BuildItem(dto.Name, dto.Image, dto.MarketHashName is not null, metadata.ToDictionary());
+        return BuildItem(CS2ItemTypes.Sticker, dto.Name, dto.Image, dto.MarketHashName is not null, metadata.ToDictionary());
     }
 
     private SkinItem? MapKeychain(ByMykelKeychain dto)
@@ -188,7 +188,7 @@ public class CS2ByMykelItemFetcher : IScheduledFetcher
             Collection = dto.Collections?.FirstOrDefault()?.Name,
         };
 
-        return BuildItem(dto.Name, dto.Image, dto.MarketHashName is not null, metadata.ToDictionary());
+        return BuildItem(CS2ItemTypes.Keychain, dto.Name, dto.Image, dto.MarketHashName is not null, metadata.ToDictionary());
     }
 
     private SkinItem? MapCrate(ByMykelCrate dto)
@@ -205,7 +205,7 @@ public class CS2ByMykelItemFetcher : IScheduledFetcher
             Rental = dto.Rental,
         };
 
-        return BuildItem(dto.Name, dto.Image, dto.MarketHashName is not null, metadata.ToDictionary());
+        return BuildItem(CS2ItemTypes.Container, dto.Name, dto.Image, dto.MarketHashName is not null, metadata.ToDictionary());
     }
 
     private SkinItem? MapKey(ByMykelKey dto)
@@ -219,7 +219,7 @@ public class CS2ByMykelItemFetcher : IScheduledFetcher
             RarityColor = null,
         };
 
-        return BuildItem(dto.Name, dto.Image, dto.Marketable, metadata.ToDictionary());
+        return BuildItem(CS2ItemTypes.Key, dto.Name, dto.Image, dto.Marketable, metadata.ToDictionary());
     }
 
     private SkinItem? MapAgent(ByMykelAgent dto)
@@ -235,21 +235,7 @@ public class CS2ByMykelItemFetcher : IScheduledFetcher
             Collection = dto.Collections?.FirstOrDefault()?.Name,
         };
 
-        return BuildItem(dto.Name, dto.Image, dto.MarketHashName is not null, metadata.ToDictionary());
-    }
-
-    private SkinItem? MapPatch(ByMykelPatch dto)
-    {
-        if (string.IsNullOrWhiteSpace(dto.Id) || string.IsNullOrWhiteSpace(dto.Name))
-            return null;
-
-        var metadata = new CS2PatchMetadata
-        {
-            Rarity = dto.Rarity?.Name,
-            RarityColor = dto.Rarity?.Color,
-        };
-
-        return BuildItem(dto.Name, dto.Image, dto.MarketHashName is not null, metadata.ToDictionary());
+        return BuildItem(CS2ItemTypes.Agent, dto.Name, dto.Image, dto.MarketHashName is not null, metadata.ToDictionary());
     }
 
     private SkinItem? MapGraffiti(ByMykelGraffiti dto)
@@ -263,27 +249,13 @@ public class CS2ByMykelItemFetcher : IScheduledFetcher
             RarityColor = dto.Rarity?.Color,
         };
 
-        return BuildItem(dto.Name, dto.Image, dto.MarketHashName is not null, metadata.ToDictionary());
-    }
-
-    private SkinItem? MapMusicKit(ByMykelMusicKit dto)
-    {
-        if (string.IsNullOrWhiteSpace(dto.Id) || string.IsNullOrWhiteSpace(dto.Name))
-            return null;
-
-        var metadata = new CS2MusicKitMetadata
-        {
-            Rarity = dto.Rarity?.Name,
-            RarityColor = dto.Rarity?.Color,
-            Exclusive = dto.Exclusive,
-        };
-
-        return BuildItem(dto.Name, dto.Image, dto.MarketHashName is not null, metadata.ToDictionary());
+        return BuildItem(CS2ItemTypes.Graffiti, dto.Name, dto.Image, dto.MarketHashName is not null, metadata.ToDictionary());
     }
 
     // --- Shared builder for non-skin items ---
 
     private static SkinItem BuildItem(
+        string type,
         string name,
         string? imageUrl,
         bool isMarketable,
@@ -291,6 +263,7 @@ public class CS2ByMykelItemFetcher : IScheduledFetcher
     {
         Id = Guid.NewGuid(),
         GameId = GameId,
+        ItemType = type,
         Slug = CS2ByMykelSlugHelper.GenerateSlug(name),
         Name = name,
         ImageUrl = imageUrl,

@@ -184,6 +184,12 @@ namespace Skindexer.Api.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("is_tradeable");
 
+                    b.Property<string>("ItemType")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("item_type");
+
                     b.Property<Dictionary<string, object>>("Metadata")
                         .IsRequired()
                         .HasColumnType("jsonb")

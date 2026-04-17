@@ -69,6 +69,7 @@ namespace Skindexer.Api.Migrations
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     game_id = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
+                    item_type = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
                     slug = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
                     name = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
                     image_url = table.Column<string>(type: "character varying(1024)", maxLength: 1024, nullable: true),

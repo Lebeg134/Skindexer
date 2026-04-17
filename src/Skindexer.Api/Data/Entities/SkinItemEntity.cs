@@ -4,6 +4,7 @@ public class SkinItemEntity
 {
     public Guid Id { get; set; }
     public string GameId { get; set; } = default!;
+    public string ItemType { get; set; } = string.Empty;
     public string Slug { get; set; } = default!;
     public string Name { get; set; } = default!;
     public string? ImageUrl { get; set; }

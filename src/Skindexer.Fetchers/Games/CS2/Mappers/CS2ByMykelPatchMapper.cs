@@ -6,7 +6,7 @@ using Skindexer.Fetchers.Games.CS2.Fetchers.DTOs;
 namespace Skindexer.Fetchers.Games.CS2.Mappers;
 
 public class CS2ByMykelPatchMapper(ILogger<CS2ByMykelPatchMapper> logger)
-    : CS2ByMykelMapperBase<ByMykelPatch>(logger, "patches.json")
+    : CS2ByMykelMapperBase<ByMykelPatch>(logger, "patches.json", CS2ItemTypes.Patch)
 {
     protected override string? GetName(ByMykelPatch dto) => dto.Name;
     protected override string? GetDiscriminator(ByMykelPatch dto) => dto.DefIndex;
@@ -26,6 +26,7 @@ public class CS2ByMykelPatchMapper(ILogger<CS2ByMykelPatchMapper> logger)
         {
             Id = Guid.NewGuid(),
             GameId = "cs2",
+            ItemType =  ItemType,
             Slug = slug,
             Name = dto.Name,
             ImageUrl = dto.Image,
