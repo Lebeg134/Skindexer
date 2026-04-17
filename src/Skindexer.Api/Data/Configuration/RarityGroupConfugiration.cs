@@ -23,8 +23,15 @@ public class RarityGroupConfiguration : IEntityTypeConfiguration<RarityGroupEnti
         builder.Property(x => x.Name)
             .IsRequired()
             .HasMaxLength(256);
+        
+        builder.Property(x => x.Type)
+            .IsRequired()
+            .HasMaxLength(256);
 
         builder.HasIndex(x => new { x.GameId, x.Slug })
+            .IsUnique();
+        
+        builder.HasIndex(x => new { x.GameId, x.Type })
             .IsUnique();
     }
 }

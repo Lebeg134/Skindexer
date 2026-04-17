@@ -65,12 +65,6 @@ namespace Skindexer.Api.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<string>("GameId")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)")
-                        .HasColumnName("game_id");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(256)
@@ -81,7 +75,7 @@ namespace Skindexer.Api.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("order");
 
-                    b.Property<Guid?>("RarityGroupId")
+                    b.Property<Guid>("RarityGroupId")
                         .HasColumnType("uuid")
                         .HasColumnName("rarity_group_id");
 
@@ -94,12 +88,9 @@ namespace Skindexer.Api.Migrations
                     b.HasKey("Id")
                         .HasName("pk_rarities");
 
-                    b.HasIndex("RarityGroupId")
-                        .HasDatabaseName("ix_rarities_rarity_group_id");
-
-                    b.HasIndex("GameId", "Slug")
+                    b.HasIndex("RarityGroupId", "Slug")
                         .IsUnique()
-                        .HasDatabaseName("ix_rarities_game_id_slug");
+                        .HasDatabaseName("ix_rarities_rarity_group_id_slug");
 
                     b.ToTable("rarities", (string)null);
                 });
@@ -129,12 +120,22 @@ namespace Skindexer.Api.Migrations
                         .HasColumnType("character varying(256)")
                         .HasColumnName("slug");
 
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("type");
+
                     b.HasKey("Id")
                         .HasName("pk_rarity_groups");
 
                     b.HasIndex("GameId", "Slug")
                         .IsUnique()
                         .HasDatabaseName("ix_rarity_groups_game_id_slug");
+
+                    b.HasIndex("GameId", "Type")
+                        .IsUnique()
+                        .HasDatabaseName("ix_rarity_groups_game_id_type");
 
                     b.ToTable("rarity_groups", (string)null);
                 });
@@ -322,6 +323,8 @@ namespace Skindexer.Api.Migrations
                     b.HasOne("Skindexer.Api.Data.Entities.RarityGroupEntity", "RarityGroup")
                         .WithMany("Rarities")
                         .HasForeignKey("RarityGroupId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
                         .HasConstraintName("fk_rarities_rarity_groups_rarity_group_id");
 
                     b.Navigation("RarityGroup");
