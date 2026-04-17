@@ -23,8 +23,12 @@ public class CollectionConfiguration : IEntityTypeConfiguration<CollectionEntity
         builder.Property(x => x.Name)
             .IsRequired()
             .HasMaxLength(256);
-
-        builder.HasIndex(x => new { x.GameId, x.Slug })
+        
+        builder.Property(x => x.Type)
+            .IsRequired()
+            .HasMaxLength(256);
+        
+        builder.HasIndex(x => new { x.GameId, x.Type, x.Slug })
             .IsUnique();
 
         builder.HasMany(x => x.Items)

@@ -48,12 +48,18 @@ namespace Skindexer.Api.Migrations
                         .HasColumnType("character varying(256)")
                         .HasColumnName("slug");
 
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("type");
+
                     b.HasKey("Id")
                         .HasName("pk_collections");
 
-                    b.HasIndex("GameId", "Slug")
+                    b.HasIndex("GameId", "Type", "Slug")
                         .IsUnique()
-                        .HasDatabaseName("ix_collections_game_id_slug");
+                        .HasDatabaseName("ix_collections_game_id_type_slug");
 
                     b.ToTable("collections", (string)null);
                 });
