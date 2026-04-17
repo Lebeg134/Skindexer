@@ -33,7 +33,8 @@ namespace Skindexer.Api.Migrations
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     game_id = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
                     slug = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
-                    name = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false)
+                    name = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
+                    type = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -45,11 +46,10 @@ namespace Skindexer.Api.Migrations
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
-                    game_id = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
                     slug = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
                     name = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
                     order = table.Column<int>(type: "integer", nullable: true),
-                    rarity_group_id = table.Column<Guid>(type: "uuid", nullable: true)
+                    rarity_group_id = table.Column<Guid>(type: "uuid", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -58,7 +58,8 @@ namespace Skindexer.Api.Migrations
                         name: "fk_rarities_rarity_groups_rarity_group_id",
                         column: x => x.rarity_group_id,
                         principalTable: "rarity_groups",
-                        principalColumn: "id");
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -169,20 +170,21 @@ namespace Skindexer.Api.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "ix_rarities_game_id_slug",
+                name: "ix_rarities_rarity_group_id_slug",
                 table: "rarities",
-                columns: new[] { "game_id", "slug" },
+                columns: new[] { "rarity_group_id", "slug" },
                 unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "ix_rarities_rarity_group_id",
-                table: "rarities",
-                column: "rarity_group_id");
 
             migrationBuilder.CreateIndex(
                 name: "ix_rarity_groups_game_id_slug",
                 table: "rarity_groups",
                 columns: new[] { "game_id", "slug" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "ix_rarity_groups_game_id_type",
+                table: "rarity_groups",
+                columns: new[] { "game_id", "type" },
                 unique: true);
 
             migrationBuilder.CreateIndex(

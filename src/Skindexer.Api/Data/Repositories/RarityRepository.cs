@@ -16,7 +16,7 @@ public class RarityRepository : IRarityRepository
     public async Task<IReadOnlyList<RarityResponse>> GetRaritiesByGameAsync(string gameId, CancellationToken ct = default)
     {
         return await _db.Rarities
-            .Where(r => r.GameId == gameId)
+            .Where(r => r.RarityGroup!.GameId == gameId)
             .OrderBy(r => r.Order)
             .Select(r => new RarityResponse
             {
