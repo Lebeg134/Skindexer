@@ -5,6 +5,7 @@ using Skindexer.Api.Data;
 using Skindexer.Api.Data.Repositories;
 using Skindexer.Api.Features;
 using Skindexer.Api.Features.Collections;
+using Skindexer.Api.Features.Enrichment;
 using Skindexer.Api.Features.Import;
 using Skindexer.Api.Features.Items;
 using Skindexer.Api.Features.Prices;
@@ -42,6 +43,7 @@ services.AddScoped<IRarityRepository, RarityRepository>();
 services.AddScoped<IVariantRepository, VariantRepository>();
 
 services.AddScoped<IFetchResultPersister, FetchResultPersister>();
+services.AddScoped<IItemEnricher, CS2ItemEnricher>();
 
 var app = builder.Build();
 
@@ -53,6 +55,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+EnrichEndpoints.MapEndpoint(app);
 GetItemsEndpoint.MapEndpoint(app);
 GetPricesEndpoint.MapEndpoint(app);
 GetCollectionsEndpoint.MapEndpoint(app);
