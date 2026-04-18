@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Skindexer.Contracts.Constants;
 using Skindexer.Contracts.Models;
 using Skindexer.Fetchers.Interfaces;
 
@@ -9,7 +10,7 @@ public class CS2Fetcher : IScheduledFetcher
     private readonly HttpClient _http;
     private readonly ILogger<CS2Fetcher> _logger;
 
-    public string FetcherId => "cs2";
+    public string FetcherId => GameIds.CounterStrike;
     public string DisplayName => "Counter-Strike 2";
     public TimeSpan PollingInterval => TimeSpan.FromMinutes(5);
 
