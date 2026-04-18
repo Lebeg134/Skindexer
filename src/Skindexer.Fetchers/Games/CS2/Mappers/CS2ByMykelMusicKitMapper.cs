@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Skindexer.Contracts.Constants;
 using Skindexer.Contracts.Models;
 using Skindexer.Contracts.Models.Metadata;
 using Skindexer.Fetchers.Games.CS2.Fetchers.DTOs;
@@ -27,7 +28,7 @@ public class CS2ByMykelMusicKitMapper(ILogger<CS2ByMykelMusicKitMapper> logger)
         return new SkinItem
         {
             Id = Guid.NewGuid(),
-            GameId = "cs2",
+            GameId = GameIds.CounterStrike,
             ItemType = ItemType,
             Slug = slug,
             Name = dto.Name,

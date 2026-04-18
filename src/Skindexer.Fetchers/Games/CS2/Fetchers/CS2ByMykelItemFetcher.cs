@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 using System.Text.Json;
+using Skindexer.Contracts.Constants;
 using Skindexer.Contracts.Models;
 using Skindexer.Contracts.Models.Metadata;
 using Skindexer.Fetchers.Games.CS2.Fetchers.DTOs;
@@ -11,7 +12,7 @@ namespace Skindexer.Fetchers.Games.CS2.Fetchers;
 
 public class CS2ByMykelItemFetcher : IScheduledFetcher
 {
-    private const string GameId = "cs2";
+    private const string GameId = GameIds.CounterStrike;
     private const string Source = "bymykel";
     private const string BaseUrl = "https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en";
 

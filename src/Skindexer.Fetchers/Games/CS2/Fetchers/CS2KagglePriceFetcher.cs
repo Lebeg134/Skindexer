@@ -23,7 +23,7 @@ public sealed class CS2KagglePriceFetcher : IFileFetcher
     public string DisplayName => "CS2 Kaggle Steam Prices";
     public string[] SupportedExtensions => [".csv"];
 
-    private const string GameId = "cs2";
+    private const string GameId = GameIds.CounterStrike;
     private const string ItemsDir = "items";
     private const string NameTable = "name_conversion_table.csv";
 
