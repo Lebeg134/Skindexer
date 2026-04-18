@@ -4,6 +4,7 @@ using Npgsql;
 using Skindexer.Api.Data;
 using Skindexer.Api.Data.Repositories;
 using Skindexer.Api.Tests.Data.Repositories.Fixtures;
+using Skindexer.Contracts.Constants;
 using Skindexer.Contracts.Models;
 using Testcontainers.PostgreSql;
 
@@ -32,7 +33,7 @@ public class ItemRepositoryTests(PostgresFixture fixture) : IClassFixture<Postgr
 
     private static SkinItem BuildItem(
         string slug = "ak-47-redline",
-        string gameId = "cs2",
+        string gameId = GameIds.CounterStrike,
         string name = "AK-47 | Redline",
         bool isTradeable = true,
         bool isMarketable = true,

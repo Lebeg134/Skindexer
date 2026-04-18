@@ -5,6 +5,7 @@ using Skindexer.Api.Data;
 using Skindexer.Api.Data.Entities;
 using Skindexer.Api.Data.Repositories;
 using Skindexer.Api.Tests.Data.Repositories.Fixtures;
+using Skindexer.Contracts.Constants;
 using Skindexer.Contracts.Models;
 using Testcontainers.PostgreSql;
 
@@ -35,7 +36,7 @@ public class PriceRepositoryTests(PostgresFixture fixture)
 
     private async Task<SkinItemEntity> SeedItemAsync(
         string slug = "ak-47-redline",
-        string gameId = "cs2")
+        string gameId = GameIds.CounterStrike)
     {
         var item = new SkinItemEntity
         {
