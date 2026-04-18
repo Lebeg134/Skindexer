@@ -2,5 +2,6 @@ namespace Skindexer.Api.Features.Enrichment;
 
 public interface IItemEnricher
 {
-    public Task EnrichAsync(string gameId, CancellationToken ct);
+    string GameId { get; }
+    Task EnrichAsync(CancellationToken ct = default);
 }
