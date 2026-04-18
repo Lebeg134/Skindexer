@@ -9,6 +9,12 @@ public class CS2ItemEnricher : IItemEnricher
 {
     public string GameId => GameIds.CounterStrike;
 
+    private static readonly HashSet<string> KnifeWeaponIdExceptions = new()
+    {
+        "weapon_bayonet",
+        "weapon_knife_css"
+    };
+
     private readonly SkindexerDbContext _db;
 
     public CS2ItemEnricher(SkindexerDbContext db)
@@ -41,8 +47,15 @@ public class CS2ItemEnricher : IItemEnricher
     // Metadata extraction
     // -------------------------------------------------------------------------
 
-    private static string? ExtractRarity(Dictionary<string, object?> metadata)
-        => metadata.GetValueOrDefault("Rarity")?.ToString();
+    private static string? ExtractRarity(string itemType, Dictionary<string, object?> metadata)
+    {
+        var rarityName = metadata.GetValueOrDefault("Rarity")?.ToString();
+
+        if (itemType == CS2ItemTypes.WeaponSkin && rarityName == "Covert" && IsKnife(metadata))
+            return "Extraordinary";
+
+        return rarityName;
+    }
 
     private static string? ExtractCollection(string itemType, Dictionary<string, object?> metadata)
     {
@@ -55,6 +68,15 @@ public class CS2ItemEnricher : IItemEnricher
         return hasCollection
             ? metadata.GetValueOrDefault("Collection")?.ToString()
             : null;
+    }
+
+    private static bool IsKnife(Dictionary<string, object?> metadata)
+    {
+        var weaponId = metadata.GetValueOrDefault("WeaponId")?.ToString();
+        if (string.IsNullOrEmpty(weaponId)) return false;
+
+        return weaponId.StartsWith("weapon_knife_", StringComparison.OrdinalIgnoreCase)
+            || KnifeWeaponIdExceptions.Contains(weaponId);
     }
 
     // -------------------------------------------------------------------------
@@ -101,7 +123,7 @@ public class CS2ItemEnricher : IItemEnricher
 
         foreach (var item in items)
         {
-            var rarityName = ExtractRarity(item.Metadata);
+            var rarityName = ExtractRarity(rarityGroup.Type, item.Metadata);
             if (string.IsNullOrWhiteSpace(rarityName)) continue;
 
             var slug = Slugify(rarityName);
@@ -114,7 +136,7 @@ public class CS2ItemEnricher : IItemEnricher
                     RarityGroupId = rarityGroup.Id,
                     Slug = slug,
                     Name = rarityName,
-                    Order = null  // set manually later
+                    Order = null
                 };
 
                 _db.Rarities.Add(rarity);
