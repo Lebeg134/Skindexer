@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Npgsql;
 using Skindexer.Api.Data;
 using Skindexer.Api.Data.Repositories;
+using Skindexer.Api.Features.Items;
 using Skindexer.Api.Tests.Data.Repositories.Fixtures;
 using Skindexer.Contracts.Constants;
 using Skindexer.Contracts.Models;
@@ -14,7 +15,7 @@ public class ItemRepositoryTests(PostgresFixture fixture) : IClassFixture<Postgr
 {
     private SkindexerDbContext _db = null!;
     private ItemRepository _repository = null!;
-    
+
     public async Task InitializeAsync()
     {
         _db = new SkindexerDbContext(fixture.Options);
@@ -35,6 +36,7 @@ public class ItemRepositoryTests(PostgresFixture fixture) : IClassFixture<Postgr
         string slug = "ak-47-redline",
         string gameId = GameIds.CounterStrike,
         string name = "AK-47 | Redline",
+        string itemType = "",
         bool isTradeable = true,
         bool isMarketable = true,
         Dictionary<string, object?>? metadata = null) => new()
@@ -43,6 +45,7 @@ public class ItemRepositoryTests(PostgresFixture fixture) : IClassFixture<Postgr
         GameId = gameId,
         Slug = slug,
         Name = name,
+        ItemType = itemType,
         ImageUrl = null,
         IsTradeable = isTradeable,
         IsMarketable = isMarketable,
@@ -51,6 +54,8 @@ public class ItemRepositoryTests(PostgresFixture fixture) : IClassFixture<Postgr
         CreatedAt = DateTime.UtcNow,
         UpdatedAt = DateTime.UtcNow,
     };
+
+    private static ItemQueryParams NoFilter() => new();
 
     #endregion
 
@@ -137,13 +142,13 @@ public class ItemRepositoryTests(PostgresFixture fixture) : IClassFixture<Postgr
     }
 
     #endregion
-    
+
     #region GetItemsByGame
 
     [Fact]
     public async Task GetItemsByGameAsync_NoItems_ReturnsEmpty()
     {
-        var result = await _repository.GetItemsByGameAsync("cs2", CancellationToken.None);
+        var result = await _repository.GetItemsByGameAsync("cs2", NoFilter(), CancellationToken.None);
 
         Assert.Empty(result);
     }
@@ -159,14 +164,49 @@ public class ItemRepositoryTests(PostgresFixture fixture) : IClassFixture<Postgr
 
         await _repository.UpsertItemsAsync(items, CancellationToken.None);
 
-        var result = await _repository.GetItemsByGameAsync("cs2", CancellationToken.None);
+        var result = await _repository.GetItemsByGameAsync("cs2", NoFilter(), CancellationToken.None);
 
         Assert.Single(result);
         Assert.Equal("cs2", result[0].GameId);
     }
 
+    [Fact]
+    public async Task GetItemsByGameAsync_FiltersByItemType_ReturnsOnlyMatchingType()
+    {
+        var items = new List<SkinItem>
+        {
+            BuildItem(slug: "ak-47-redline", itemType: "weapon_skin"),
+            BuildItem(slug: "howl-sticker", itemType: "sticker"),
+            BuildItem(slug: "csgo-capsule", itemType: "crate"),
+        };
+
+        await _repository.UpsertItemsAsync(items, CancellationToken.None);
+
+        var query = new ItemQueryParams { ItemType = "weapon_skin" };
+        var result = await _repository.GetItemsByGameAsync(GameIds.CounterStrike, query, CancellationToken.None);
+
+        Assert.Single(result);
+        Assert.Equal("ak-47-redline", result[0].Slug);
+    }
+
+    [Fact]
+    public async Task GetItemsByGameAsync_ItemTypeFilter_NoMatch_ReturnsEmpty()
+    {
+        var items = new List<SkinItem>
+        {
+            BuildItem(slug: "ak-47-redline", itemType: "weapon_skin"),
+        };
+
+        await _repository.UpsertItemsAsync(items, CancellationToken.None);
+
+        var query = new ItemQueryParams { ItemType = "sticker" };
+        var result = await _repository.GetItemsByGameAsync(GameIds.CounterStrike, query, CancellationToken.None);
+
+        Assert.Empty(result);
+    }
+
     #endregion
-    
+
     #region GetSlugToItemIdMapAsync
 
     [Fact]

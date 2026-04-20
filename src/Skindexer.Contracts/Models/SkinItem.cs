@@ -14,4 +14,6 @@ public class SkinItem
     public DateTime? AddedToGameAt { get; set; }
     public DateTime CreatedAt { get; init; }
     public DateTime UpdatedAt { get; init; }
+    public Guid? CollectionId { get; init; }
+    public Guid? RarityId { get; init; }
 }

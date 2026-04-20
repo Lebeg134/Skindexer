@@ -20,10 +20,11 @@ public class ItemRepository : IItemRepository
         _dataSource = dataSource;
     }
 
-    public async Task<IReadOnlyList<SkinItem>> GetItemsByGameAsync(string gameId, CancellationToken ct = default)
+    public async Task<IReadOnlyList<SkinItem>> GetItemsByGameAsync(string gameId, ItemQueryParams query, CancellationToken ct = default)
     {
         return await _db.Items
             .Where(i => i.GameId == gameId)
+            .Where(i => query.ItemType == null || i.ItemType == query.ItemType)
             .Select(i => new SkinItem
             {
                 Id = i.Id,
@@ -37,7 +38,9 @@ public class ItemRepository : IItemRepository
                 Metadata = i.Metadata,
                 AddedToGameAt = i.AddedToGameAt,
                 CreatedAt = i.CreatedAt,
-                UpdatedAt = i.UpdatedAt
+                UpdatedAt = i.UpdatedAt,
+                CollectionId = i.CollectionId,
+                RarityId = i.RarityId
             })
             .ToListAsync(ct);
     }
