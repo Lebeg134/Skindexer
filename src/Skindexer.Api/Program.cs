@@ -61,7 +61,7 @@ GetPricesEndpoint.MapEndpoint(app);
 GetCollectionsEndpoint.MapEndpoint(app);
 GetRaritiesEndpoint.MapEndpoint(app);
 
-CS2KaggleImportEndpoints.MapEndpoint(app);
+CS2KaggleImportEndpoint.MapEndpoint(app);
 
 var registry = app.Services.GetRequiredService<FetcherRegistry>();
 var logger = app.Services.GetRequiredService<ILogger<Program>>();

@@ -5,7 +5,7 @@ using Skindexer.Fetchers.Interfaces;
 
 namespace Skindexer.Api.Features.Import;
 
-public static class CS2KaggleImportEndpoints
+public static class CS2KaggleImportEndpoint
 {
     public static void MapEndpoint(IEndpointRouteBuilder app)
     {
