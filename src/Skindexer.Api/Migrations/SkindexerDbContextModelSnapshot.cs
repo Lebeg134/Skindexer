@@ -244,6 +244,12 @@ namespace Skindexer.Api.Migrations
                         .HasColumnType("character varying(16)")
                         .HasColumnName("currency");
 
+                    b.Property<string>("GameId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("game_id");
+
                     b.Property<decimal>("Price")
                         .HasPrecision(18, 8)
                         .HasColumnType("numeric(18,8)")
@@ -302,7 +308,7 @@ namespace Skindexer.Api.Migrations
                         .HasColumnType("character varying(64)")
                         .HasColumnName("game_id");
 
-                    b.Property<Guid>("VariantId")
+                    b.Property<Guid>("ItemId")
                         .HasColumnType("uuid")
                         .HasColumnName("item_id");
 
@@ -320,7 +326,7 @@ namespace Skindexer.Api.Migrations
                     b.HasKey("Id")
                         .HasName("pk_variants");
 
-                    b.HasIndex("VariantId")
+                    b.HasIndex("ItemId")
                         .HasDatabaseName("ix_variants_item_id");
 
                     b.HasIndex("GameId", "Slug")
@@ -375,7 +381,7 @@ namespace Skindexer.Api.Migrations
                 {
                     b.HasOne("Skindexer.Api.Data.Entities.SkinItemEntity", "Item")
                         .WithMany("Variants")
-                        .HasForeignKey("VariantId")
+                        .HasForeignKey("ItemId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_variants_items_item_id");

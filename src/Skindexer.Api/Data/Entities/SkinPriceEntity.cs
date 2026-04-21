@@ -4,6 +4,7 @@ public class SkinPriceEntity
 {
     public Guid Id { get; set; }
     public Guid VariantId { get; set; }
+    public string GameId { get; set; } = default!;
     public string Slug { get; set; } = default!;
     public string Source { get; set; } = default!;
     public string PriceType { get; set; } = default!;
