@@ -2,7 +2,7 @@ namespace Skindexer.Contracts.Responses;
 
 public class SkinPriceResponse
 {
-    public Guid ItemId { get; init; }
+    public Guid VariantId { get; init; }
     public string Slug { get; init; } = default!;
     public string Source { get; init; } = default!;
     public string PriceType { get; init; } = default!;

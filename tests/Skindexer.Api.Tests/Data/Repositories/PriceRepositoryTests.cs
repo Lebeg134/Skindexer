@@ -1,9 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
-using Npgsql;
 using Skindexer.Api.Data;
 using Skindexer.Api.Data.Entities;
 using Skindexer.Api.Data.Repositories;
+using Skindexer.Api.Features.Prices;
 using Skindexer.Api.Tests.Data.Repositories.Fixtures;
 using Skindexer.Contracts.Constants;
 using Skindexer.Contracts.Models;
@@ -79,18 +79,21 @@ public class PriceRepositoryTests(PostgresFixture fixture)
         string slug,
         decimal price = 10m,
         int? volume = 100,
-        string source = "kaggle-steam",
+        string source = Sources.KaggleSteam,
+        string priceType = PriceTypes.MedianDaily,
         DateTime? recordedAt = null) => new()
     {
         VariantId = variantId,
         Slug = slug,
         Source = source,
-        PriceType = "median_daily",
+        PriceType = priceType,
         Price = price,
         Currency = "USD",
         Volume = volume,
         RecordedAt = recordedAt ?? new DateTime(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc),
     };
+
+    private static PriceQueryParams NoFilter() => new();
 
     #endregion
 
@@ -99,7 +102,7 @@ public class PriceRepositoryTests(PostgresFixture fixture)
     [Fact]
     public async Task GetCurrentPricesByGameAsync_NoItems_ReturnsEmpty()
     {
-        var result = await _repository.GetCurrentPricesByGameAsync("cs2", CancellationToken.None);
+        var result = await _repository.GetCurrentPricesByGameAsync("cs2", NoFilter(), CancellationToken.None);
 
         Assert.Empty(result);
     }
@@ -119,7 +122,7 @@ public class PriceRepositoryTests(PostgresFixture fixture)
 
         await _repository.InsertPricesAsync(prices, CancellationToken.None);
 
-        var result = await _repository.GetCurrentPricesByGameAsync("cs2", CancellationToken.None);
+        var result = await _repository.GetCurrentPricesByGameAsync("cs2", NoFilter(), CancellationToken.None);
 
         Assert.Single(result);
         Assert.Equal(12m, result[0].Price);
@@ -135,19 +138,15 @@ public class PriceRepositoryTests(PostgresFixture fixture)
 
         var prices = new List<SkinPrice>
         {
-            BuildPrice(variant1.Id, variant1.Slug, price: 10m,
-                recordedAt: new DateTime(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc)),
-            BuildPrice(variant1.Id, variant1.Slug, price: 15m,
-                recordedAt: new DateTime(2021, 1, 2, 0, 0, 0, DateTimeKind.Utc)),
-            BuildPrice(variant2.Id, variant2.Slug, price: 500m,
-                recordedAt: new DateTime(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc)),
-            BuildPrice(variant2.Id, variant2.Slug, price: 550m,
-                recordedAt: new DateTime(2021, 1, 2, 0, 0, 0, DateTimeKind.Utc)),
+            BuildPrice(variant1.Id, variant1.Slug, price: 10m, recordedAt: new DateTime(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc)),
+            BuildPrice(variant1.Id, variant1.Slug, price: 15m, recordedAt: new DateTime(2021, 1, 2, 0, 0, 0, DateTimeKind.Utc)),
+            BuildPrice(variant2.Id, variant2.Slug, price: 500m, recordedAt: new DateTime(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc)),
+            BuildPrice(variant2.Id, variant2.Slug, price: 550m, recordedAt: new DateTime(2021, 1, 2, 0, 0, 0, DateTimeKind.Utc)),
         };
 
         await _repository.InsertPricesAsync(prices, CancellationToken.None);
 
-        var result = await _repository.GetCurrentPricesByGameAsync("cs2", CancellationToken.None);
+        var result = await _repository.GetCurrentPricesByGameAsync("cs2", NoFilter(), CancellationToken.None);
 
         Assert.Equal(2, result.Count);
         Assert.Contains(result, p => p.VariantId == variant1.Id && p.Price == 15m);
@@ -162,19 +161,16 @@ public class PriceRepositoryTests(PostgresFixture fixture)
 
         var prices = new List<SkinPrice>
         {
-            BuildPrice(variant.Id, variant.Slug, price: 10m,
-                recordedAt: new DateTime(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc)),
-            BuildPrice(variant.Id, variant.Slug, price: 11m,
-                recordedAt: new DateTime(2021, 1, 2, 0, 0, 0, DateTimeKind.Utc),
-                source: "steam-market"),
+            BuildPrice(variant.Id, variant.Slug, price: 10m, recordedAt: new DateTime(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc)),
+            BuildPrice(variant.Id, variant.Slug, price: 11m, recordedAt: new DateTime(2021, 1, 2, 0, 0, 0, DateTimeKind.Utc), source: "steam-market"),
         };
 
         await _repository.InsertPricesAsync(prices, CancellationToken.None);
 
-        var result = await _repository.GetCurrentPricesByGameAsync("cs2", CancellationToken.None);
+        var result = await _repository.GetCurrentPricesByGameAsync("cs2", NoFilter(), CancellationToken.None);
 
         Assert.Equal(2, result.Count);
-        Assert.Contains(result, p => p.Source == "kaggle-steam" && p.Price == 10m);
+        Assert.Contains(result, p => p.Source == Sources.KaggleSteam && p.Price == 10m);
         Assert.Contains(result, p => p.Source == "steam-market" && p.Price == 11m);
     }
 
@@ -194,10 +190,53 @@ public class PriceRepositoryTests(PostgresFixture fixture)
 
         await _repository.InsertPricesAsync(prices, CancellationToken.None);
 
-        var result = await _repository.GetCurrentPricesByGameAsync("cs2", CancellationToken.None);
+        var result = await _repository.GetCurrentPricesByGameAsync("cs2", NoFilter(), CancellationToken.None);
 
         Assert.Single(result);
         Assert.Equal(cs2Variant.Id, result[0].VariantId);
+    }
+
+    [Fact]
+    public async Task GetCurrentPricesByGameAsync_FiltersByPriceType_ReturnsOnlyMatchingType()
+    {
+        var item = await SeedItemAsync();
+        var variant = await SeedVariantAsync(item);
+
+        var prices = new List<SkinPrice>
+        {
+            BuildPrice(variant.Id, variant.Slug, price: 10m, priceType: PriceTypes.MedianDaily,
+                recordedAt: new DateTime(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc)),
+            BuildPrice(variant.Id, variant.Slug, price: 11m, priceType: PriceTypes.LowestListing,
+                recordedAt: new DateTime(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc)),
+        };
+
+        await _repository.InsertPricesAsync(prices, CancellationToken.None);
+
+        var query = new PriceQueryParams { PriceType = PriceTypes.MedianDaily };
+        var result = await _repository.GetCurrentPricesByGameAsync("cs2", query, CancellationToken.None);
+
+        Assert.Single(result);
+        Assert.Equal(PriceTypes.MedianDaily, result[0].PriceType);
+        Assert.Equal(10m, result[0].Price);
+    }
+
+    [Fact]
+    public async Task GetCurrentPricesByGameAsync_PriceTypeFilter_NoMatch_ReturnsEmpty()
+    {
+        var item = await SeedItemAsync();
+        var variant = await SeedVariantAsync(item);
+
+        var prices = new List<SkinPrice>
+        {
+            BuildPrice(variant.Id, variant.Slug, priceType: PriceTypes.MedianDaily),
+        };
+
+        await _repository.InsertPricesAsync(prices, CancellationToken.None);
+
+        var query = new PriceQueryParams { PriceType = PriceTypes.LowestListing };
+        var result = await _repository.GetCurrentPricesByGameAsync("cs2", query, CancellationToken.None);
+
+        Assert.Empty(result);
     }
 
     #endregion
@@ -331,7 +370,6 @@ public class PriceRepositoryTests(PostgresFixture fixture)
         var variant = await SeedVariantAsync(item);
         var recordedAt = new DateTime(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
-        // Same natural key twice in one batch — in-memory dedup should keep the last
         var prices = new List<SkinPrice>
         {
             BuildPrice(variant.Id, variant.Slug, price: 10m, recordedAt: recordedAt),

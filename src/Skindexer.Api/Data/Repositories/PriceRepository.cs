@@ -20,26 +20,36 @@ public class PriceRepository : IPriceRepository
         _dataSource = dataSource;
         _logger = logger;
     }
-
-    public async Task<IReadOnlyList<SkinPrice>> GetCurrentPricesByGameAsync(string gameId,
+    public async Task<IReadOnlyList<SkinPrice>> GetCurrentPricesByGameAsync(string gameId, PriceQueryParams query,
         CancellationToken ct = default)
     {
-        const string sql = """
-                           SELECT DISTINCT ON (p.variant_id, p.source, p.price_type)
-                               p.variant_id, p.slug, p.source, p.price_type,
-                               p.price, p.currency, p.volume, p.recorded_at
-                           FROM price_snapshots p
-                           INNER JOIN variants v ON v.id = p.variant_id
-                           INNER JOIN items i ON i.id = v.item_id
-                           WHERE i.game_id = {0}
-                           ORDER BY p.variant_id, p.source, p.price_type, p.recorded_at DESC
-                           """;
+        var conditions = new List<string> { "i.game_id = {0}" };
+        var parameters = new List<object> { gameId };
+
+        if (query.PriceType is not null)
+        {
+            conditions.Add($"p.price_type = {{{parameters.Count}}}");
+            parameters.Add(query.PriceType);
+        }
+
+        var where = string.Join(" AND ", conditions);
+
+        var sql = $"""
+                   SELECT DISTINCT ON (p.variant_id, p.source, p.price_type)
+                       p.variant_id, p.slug, p.source, p.price_type,
+                       p.price, p.currency, p.volume, p.recorded_at
+                   FROM price_snapshots p
+                   INNER JOIN variants v ON v.id = p.variant_id
+                   INNER JOIN items i ON i.id = v.item_id
+                   WHERE {where}
+                   ORDER BY p.variant_id, p.source, p.price_type, p.recorded_at DESC
+                   """;
 
         return await _db.Database
-            .SqlQueryRaw<SkinPrice>(sql, gameId)
+            .SqlQueryRaw<SkinPrice>(sql, parameters.ToArray())
             .ToListAsync(ct);
     }
-
+    
     public async Task InsertPricesAsync(IReadOnlyList<SkinPrice> prices, CancellationToken ct = default)
     {
         if (prices.Count == 0) return;
