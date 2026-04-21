@@ -40,6 +40,7 @@ services.AddScoped<IItemRepository, ItemRepository>();
 services.AddScoped<IPriceRepository, PriceRepository>();
 services.AddScoped<ICollectionRepository, CollectionRepository>();
 services.AddScoped<IRarityRepository, RarityRepository>();
+services.AddScoped<IRarityGroupRepository, RarityGroupRepository>();
 services.AddScoped<IVariantRepository, VariantRepository>();
 
 services.AddScoped<IFetchResultPersister, FetchResultPersister>();
@@ -60,6 +61,7 @@ GetItemsEndpoint.MapEndpoint(app);
 GetPricesEndpoint.MapEndpoint(app);
 GetCollectionsEndpoint.MapEndpoint(app);
 GetRaritiesEndpoint.MapEndpoint(app);
+GetRarityGroupsEndpoint.MapEndpoint(app);
 GetVariantsEndpoint.MapEndpoint(app);
 
 CS2KaggleImportEndpoint.MapEndpoint(app);
