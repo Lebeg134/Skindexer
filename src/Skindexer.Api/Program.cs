@@ -60,6 +60,7 @@ GetItemsEndpoint.MapEndpoint(app);
 GetPricesEndpoint.MapEndpoint(app);
 GetCollectionsEndpoint.MapEndpoint(app);
 GetRaritiesEndpoint.MapEndpoint(app);
+GetVariantsEndpoint.MapEndpoint(app);
 
 CS2KaggleImportEndpoint.MapEndpoint(app);
 
