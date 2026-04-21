@@ -19,6 +19,7 @@ public class RarityGroupRepository : IRarityGroupRepository
             .Where(rg => rg.GameId == gameId)
             .Select(rg => new RarityGroupResponse
             {
+                Id = rg.Id,
                 Slug = rg.Slug,
                 DisplayName = rg.Name
             })
