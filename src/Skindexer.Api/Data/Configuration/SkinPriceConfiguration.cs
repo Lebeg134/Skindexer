@@ -14,6 +14,10 @@ public class SkinPriceConfiguration : IEntityTypeConfiguration<SkinPriceEntity>
 
         builder.Property(x => x.VariantId)
             .IsRequired();
+        
+        builder.Property(x => x.GameId)
+            .IsRequired()
+            .HasMaxLength(64);
 
         builder.Property(x => x.Slug)
             .IsRequired()

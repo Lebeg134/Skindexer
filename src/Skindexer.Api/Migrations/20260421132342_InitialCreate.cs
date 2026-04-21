@@ -124,6 +124,7 @@ namespace Skindexer.Api.Migrations
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     variant_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    game_id = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
                     slug = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
                     source = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     price_type = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),

@@ -13,17 +13,17 @@ public class PriceRepository : IPriceRepository
     private readonly NpgsqlDataSource _dataSource;
     private readonly ILogger<PriceRepository> _logger;
 
-
     public PriceRepository(SkindexerDbContext db, NpgsqlDataSource dataSource, ILogger<PriceRepository> logger)
     {
         _db = db;
         _dataSource = dataSource;
         _logger = logger;
     }
+
     public async Task<IReadOnlyList<SkinPrice>> GetCurrentPricesByGameAsync(string gameId, PriceQueryParams query,
         CancellationToken ct = default)
     {
-        var conditions = new List<string> { "i.game_id = {0}" };
+        var conditions = new List<string> { "p.game_id = {0}" };
         var parameters = new List<object> { gameId };
 
         if (query.PriceType is not null)
@@ -32,15 +32,19 @@ public class PriceRepository : IPriceRepository
             parameters.Add(query.PriceType);
         }
 
+        if (query.Source is not null)
+        {
+            conditions.Add($"p.source = '{query.Source}'");
+            parameters.Add(query.Source);
+        }
+
         var where = string.Join(" AND ", conditions);
 
         var sql = $"""
                    SELECT DISTINCT ON (p.variant_id, p.source, p.price_type)
-                       p.variant_id, p.slug, p.source, p.price_type,
+                       p.variant_id, p.game_id, p.slug, p.source, p.price_type,
                        p.price, p.currency, p.volume, p.recorded_at
                    FROM price_snapshots p
-                   INNER JOIN variants v ON v.id = p.variant_id
-                   INNER JOIN items i ON i.id = v.item_id
                    WHERE {where}
                    ORDER BY p.variant_id, p.source, p.price_type, p.recorded_at DESC
                    """;
@@ -97,6 +101,7 @@ public class PriceRepository : IPriceRepository
                                   CREATE TEMP TABLE price_snapshots_staging (
                                       id          uuid,
                                       variant_id  uuid,
+                                      game_id     varchar(64),
                                       slug        varchar(256),
                                       source      varchar(128),
                                       price_type  varchar(64),
@@ -111,7 +116,7 @@ public class PriceRepository : IPriceRepository
 
             // Step 2 — Binary COPY into staging
             await using (var writer = await conn.BeginBinaryImportAsync(
-                             "COPY price_snapshots_staging (id, variant_id, slug, source, price_type, price, currency, volume, recorded_at) FROM STDIN (FORMAT BINARY)",
+                             "COPY price_snapshots_staging (id, variant_id, game_id, slug, source, price_type, price, currency, volume, recorded_at) FROM STDIN (FORMAT BINARY)",
                              ct))
             {
                 foreach (var p in deduped)
@@ -119,6 +124,7 @@ public class PriceRepository : IPriceRepository
                     await writer.StartRowAsync(ct);
                     await writer.WriteAsync(Guid.NewGuid(), NpgsqlDbType.Uuid, ct);
                     await writer.WriteAsync(p.VariantId, NpgsqlDbType.Uuid, ct);
+                    await writer.WriteAsync(p.GameId, NpgsqlDbType.Varchar, ct);
                     await writer.WriteAsync(p.Slug, NpgsqlDbType.Varchar, ct);
                     await writer.WriteAsync(p.Source, NpgsqlDbType.Varchar, ct);
                     await writer.WriteAsync(p.PriceType, NpgsqlDbType.Varchar, ct);
@@ -136,8 +142,8 @@ public class PriceRepository : IPriceRepository
             {
                 upsertCmd.Transaction = transaction;
                 upsertCmd.CommandText = """
-                                        INSERT INTO price_snapshots (id, variant_id, slug, source, price_type, price, currency, volume, recorded_at)
-                                        SELECT id, variant_id, slug, source, price_type, price, currency, volume, recorded_at
+                                        INSERT INTO price_snapshots (id, variant_id, game_id, slug, source, price_type, price, currency, volume, recorded_at)
+                                        SELECT id, variant_id, game_id, slug, source, price_type, price, currency, volume, recorded_at
                                         FROM price_snapshots_staging
                                         ON CONFLICT (variant_id, source, price_type, recorded_at) DO NOTHING
                                         """;

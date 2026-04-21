@@ -196,6 +196,7 @@ public sealed class CS2KagglePriceFetcher : IFileFetcher
                     prices.Add(new SkinPrice
                     {
                         VariantId = variantId,
+                        GameId = GameIds.CounterStrike,
                         Slug = targetSlug,
                         Source = Sources.KaggleSteam,
                         PriceType = PriceTypes.MedianDaily,
