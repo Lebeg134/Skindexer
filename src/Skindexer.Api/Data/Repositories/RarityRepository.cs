@@ -20,6 +20,7 @@ public class RarityRepository : IRarityRepository
             .OrderBy(r => r.Order)
             .Select(r => new RarityResponse
             {
+                Id = r.Id,
                 Slug = r.Slug,
                 DisplayName = r.Name,
                 Order = r.Order,

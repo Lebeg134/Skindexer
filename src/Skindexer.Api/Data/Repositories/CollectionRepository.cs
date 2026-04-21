@@ -19,6 +19,7 @@ public class CollectionRepository : ICollectionRepository
             .Where(c => c.GameId == gameId)
             .Select(c => new CollectionResponse
             {
+                Id = c.Id,
                 Slug = c.Slug,
                 DisplayName = c.Name,
                 ItemIds = c.Items.Select(i => i.Id).ToList()
