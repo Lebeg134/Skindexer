@@ -21,7 +21,7 @@ public class CollectionRepository : ICollectionRepository
             {
                 Slug = c.Slug,
                 DisplayName = c.Name,
-                ItemSlugs = c.Items.Select(i => i.Slug).ToList()
+                ItemIds = c.Items.Select(i => i.Id).ToList()
             })
             .ToListAsync(ct);
     }
