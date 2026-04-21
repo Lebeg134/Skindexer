@@ -59,4 +59,20 @@ public class VariantRepository : IVariantRepository
             .Where(v => v.GameId == gameId)
             .ToDictionaryAsync(v => v.Slug, v => v.Id, ct);
     }
+
+    public async Task<IReadOnlyList<SkinVariant>> GetVariantsByGameAsync(string gameId, VariantQueryParams query, CancellationToken ct = default)
+    {
+        return await _db.Variants
+            .Where(v => v.GameId == gameId)
+            .Where(v => query.ItemId == null || v.ItemId == query.ItemId)
+            .Select(v => new SkinVariant
+            {
+                Id = v.Id,
+                ItemId = v.ItemId,
+                GameId = v.GameId,
+                Slug = v.Slug,
+                Metadata = v.Metadata
+            })
+            .ToListAsync(ct);
+    }
 }
