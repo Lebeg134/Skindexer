@@ -10,6 +10,7 @@ public class SkindexerDbContext : DbContext
     public DbSet<SkinItemEntity> Items => Set<SkinItemEntity>();
     public DbSet<SkinVariantEntity> Variants => Set<SkinVariantEntity>();
     public DbSet<SkinPriceEntity> Prices => Set<SkinPriceEntity>();
+    public DbSet<CurrentPriceEntity> CurrentPrices => Set<CurrentPriceEntity>();
     public DbSet<CollectionEntity> Collections => Set<CollectionEntity>();
     public DbSet<RarityEntity> Rarities => Set<RarityEntity>();
     public DbSet<RarityGroupEntity> RarityGroups => Set<RarityGroupEntity>();

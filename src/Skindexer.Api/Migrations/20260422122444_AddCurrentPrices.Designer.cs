@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Skindexer.Api.Data;
@@ -12,9 +13,11 @@ using Skindexer.Api.Data;
 namespace Skindexer.Api.Migrations
 {
     [DbContext(typeof(SkindexerDbContext))]
-    partial class SkindexerDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260422122444_AddCurrentPrices")]
+    partial class AddCurrentPrices
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

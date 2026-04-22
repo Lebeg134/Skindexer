@@ -20,6 +20,7 @@ public class PriceRepositoryTests(PostgresFixture fixture)
     public async Task InitializeAsync()
     {
         _db = new SkindexerDbContext(fixture.Options);
+        await _db.CurrentPrices.ExecuteDeleteAsync();
         await _db.Prices.ExecuteDeleteAsync();
         await _db.Variants.ExecuteDeleteAsync();
         await _db.Items.ExecuteDeleteAsync();
@@ -77,6 +78,7 @@ public class PriceRepositoryTests(PostgresFixture fixture)
     private static SkinPrice BuildPrice(
         Guid variantId,
         string slug,
+        string gameId = GameIds.CounterStrike,
         decimal price = 10m,
         int? volume = 100,
         string source = Sources.KaggleSteam,
@@ -84,6 +86,7 @@ public class PriceRepositoryTests(PostgresFixture fixture)
         DateTime? recordedAt = null) => new()
     {
         VariantId = variantId,
+        GameId = gameId,
         Slug = slug,
         Source = source,
         PriceType = priceType,
@@ -97,150 +100,6 @@ public class PriceRepositoryTests(PostgresFixture fixture)
 
     #endregion
 
-    #region GetCurrentPricesByGameAsync
-
-    [Fact]
-    public async Task GetCurrentPricesByGameAsync_NoItems_ReturnsEmpty()
-    {
-        var result = await _repository.GetCurrentPricesByGameAsync("cs2", NoFilter(), CancellationToken.None);
-
-        Assert.Empty(result);
-    }
-
-    [Fact]
-    public async Task GetCurrentPricesByGameAsync_ReturnsOnlyMostRecentSnapshot()
-    {
-        var item = await SeedItemAsync();
-        var variant = await SeedVariantAsync(item);
-
-        var prices = new List<SkinPrice>
-        {
-            BuildPrice(variant.Id, variant.Slug, price: 10m, recordedAt: new DateTime(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc)),
-            BuildPrice(variant.Id, variant.Slug, price: 11m, recordedAt: new DateTime(2021, 1, 2, 0, 0, 0, DateTimeKind.Utc)),
-            BuildPrice(variant.Id, variant.Slug, price: 12m, recordedAt: new DateTime(2021, 1, 3, 0, 0, 0, DateTimeKind.Utc)),
-        };
-
-        await _repository.InsertPricesAsync(prices, CancellationToken.None);
-
-        var result = await _repository.GetCurrentPricesByGameAsync("cs2", NoFilter(), CancellationToken.None);
-
-        Assert.Single(result);
-        Assert.Equal(12m, result[0].Price);
-    }
-
-    [Fact]
-    public async Task GetCurrentPricesByGameAsync_MultipleItems_ReturnsMostRecentPerItem()
-    {
-        var item1 = await SeedItemAsync(slug: "ak-47-redline");
-        var item2 = await SeedItemAsync(slug: "m4a4-howl");
-        var variant1 = await SeedVariantAsync(item1);
-        var variant2 = await SeedVariantAsync(item2);
-
-        var prices = new List<SkinPrice>
-        {
-            BuildPrice(variant1.Id, variant1.Slug, price: 10m, recordedAt: new DateTime(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc)),
-            BuildPrice(variant1.Id, variant1.Slug, price: 15m, recordedAt: new DateTime(2021, 1, 2, 0, 0, 0, DateTimeKind.Utc)),
-            BuildPrice(variant2.Id, variant2.Slug, price: 500m, recordedAt: new DateTime(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc)),
-            BuildPrice(variant2.Id, variant2.Slug, price: 550m, recordedAt: new DateTime(2021, 1, 2, 0, 0, 0, DateTimeKind.Utc)),
-        };
-
-        await _repository.InsertPricesAsync(prices, CancellationToken.None);
-
-        var result = await _repository.GetCurrentPricesByGameAsync("cs2", NoFilter(), CancellationToken.None);
-
-        Assert.Equal(2, result.Count);
-        Assert.Contains(result, p => p.VariantId == variant1.Id && p.Price == 15m);
-        Assert.Contains(result, p => p.VariantId == variant2.Id && p.Price == 550m);
-    }
-
-    [Fact]
-    public async Task GetCurrentPricesByGameAsync_MultipleSources_ReturnsMostRecentPerSource()
-    {
-        var item = await SeedItemAsync();
-        var variant = await SeedVariantAsync(item);
-
-        var prices = new List<SkinPrice>
-        {
-            BuildPrice(variant.Id, variant.Slug, price: 10m, recordedAt: new DateTime(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc)),
-            BuildPrice(variant.Id, variant.Slug, price: 11m, recordedAt: new DateTime(2021, 1, 2, 0, 0, 0, DateTimeKind.Utc), source: "steam-market"),
-        };
-
-        await _repository.InsertPricesAsync(prices, CancellationToken.None);
-
-        var result = await _repository.GetCurrentPricesByGameAsync("cs2", NoFilter(), CancellationToken.None);
-
-        Assert.Equal(2, result.Count);
-        Assert.Contains(result, p => p.Source == Sources.KaggleSteam && p.Price == 10m);
-        Assert.Contains(result, p => p.Source == "steam-market" && p.Price == 11m);
-    }
-
-    [Fact]
-    public async Task GetCurrentPricesByGameAsync_FiltersByGameId()
-    {
-        var cs2Item = await SeedItemAsync(slug: "ak-47-redline", gameId: "cs2");
-        var tf2Item = await SeedItemAsync(slug: "ak-47-redline", gameId: "tf2");
-        var cs2Variant = await SeedVariantAsync(cs2Item);
-        var tf2Variant = await SeedVariantAsync(tf2Item);
-
-        var prices = new List<SkinPrice>
-        {
-            BuildPrice(cs2Variant.Id, cs2Variant.Slug, price: 10m),
-            BuildPrice(tf2Variant.Id, tf2Variant.Slug, price: 99m),
-        };
-
-        await _repository.InsertPricesAsync(prices, CancellationToken.None);
-
-        var result = await _repository.GetCurrentPricesByGameAsync("cs2", NoFilter(), CancellationToken.None);
-
-        Assert.Single(result);
-        Assert.Equal(cs2Variant.Id, result[0].VariantId);
-    }
-
-    [Fact]
-    public async Task GetCurrentPricesByGameAsync_FiltersByPriceType_ReturnsOnlyMatchingType()
-    {
-        var item = await SeedItemAsync();
-        var variant = await SeedVariantAsync(item);
-
-        var prices = new List<SkinPrice>
-        {
-            BuildPrice(variant.Id, variant.Slug, price: 10m, priceType: PriceTypes.MedianDaily,
-                recordedAt: new DateTime(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc)),
-            BuildPrice(variant.Id, variant.Slug, price: 11m, priceType: PriceTypes.LowestListing,
-                recordedAt: new DateTime(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc)),
-        };
-
-        await _repository.InsertPricesAsync(prices, CancellationToken.None);
-
-        var query = new PriceQueryParams { PriceType = PriceTypes.MedianDaily };
-        var result = await _repository.GetCurrentPricesByGameAsync("cs2", query, CancellationToken.None);
-
-        Assert.Single(result);
-        Assert.Equal(PriceTypes.MedianDaily, result[0].PriceType);
-        Assert.Equal(10m, result[0].Price);
-    }
-
-    [Fact]
-    public async Task GetCurrentPricesByGameAsync_PriceTypeFilter_NoMatch_ReturnsEmpty()
-    {
-        var item = await SeedItemAsync();
-        var variant = await SeedVariantAsync(item);
-
-        var prices = new List<SkinPrice>
-        {
-            BuildPrice(variant.Id, variant.Slug, priceType: PriceTypes.MedianDaily),
-        };
-
-        await _repository.InsertPricesAsync(prices, CancellationToken.None);
-
-        var query = new PriceQueryParams { PriceType = PriceTypes.LowestListing };
-        var result = await _repository.GetCurrentPricesByGameAsync("cs2", query, CancellationToken.None);
-
-        Assert.Empty(result);
-    }
-
-    #endregion
-
     #region Guard Clauses
 
     [Fact]
@@ -248,16 +107,16 @@ public class PriceRepositoryTests(PostgresFixture fixture)
     {
         await _repository.UpsertPricesAsync([], CancellationToken.None);
 
-        var count = await _db.Prices.CountAsync();
-        Assert.Equal(0, count);
+        Assert.Equal(0, await _db.Prices.CountAsync());
+        Assert.Equal(0, await _db.CurrentPrices.CountAsync());
     }
 
     #endregion
 
-    #region Insert
+    #region UpsertPricesAsync — price_snapshots
 
     [Fact]
-    public async Task UpsertPricesAsync_NewPrices_InsertsAllRows()
+    public async Task UpsertPricesAsync_NewPrices_InsertsAllRowsIntoSnapshots()
     {
         var item = await SeedItemAsync();
         var variant = await SeedVariantAsync(item);
@@ -279,24 +138,21 @@ public class PriceRepositoryTests(PostgresFixture fixture)
     }
 
     [Fact]
-    public async Task UpsertPricesAsync_NullVolume_InsertsWithoutError()
+    public async Task UpsertPricesAsync_NullVolume_InsertsIntoSnapshotsWithoutError()
     {
         var item = await SeedItemAsync();
         var variant = await SeedVariantAsync(item);
 
-        var prices = new List<SkinPrice>
-        {
-            BuildPrice(variant.Id, variant.Slug, volume: null),
-        };
-
-        await _repository.UpsertPricesAsync(prices, CancellationToken.None);
+        await _repository.UpsertPricesAsync(
+            [BuildPrice(variant.Id, variant.Slug, volume: null)],
+            CancellationToken.None);
 
         var stored = await _db.Prices.SingleAsync();
         Assert.Null(stored.Volume);
     }
 
     [Fact]
-    public async Task UpsertPricesAsync_MultipleItems_AllPricesLandCorrectly()
+    public async Task UpsertPricesAsync_MultipleItems_AllSnapshotsLandCorrectly()
     {
         var item1 = await SeedItemAsync(slug: "ak-47-redline");
         var item2 = await SeedItemAsync(slug: "m4a4-howl");
@@ -317,54 +173,21 @@ public class PriceRepositoryTests(PostgresFixture fixture)
         Assert.Contains(stored, p => p.VariantId == variant2.Id && p.Price == 500m);
     }
 
-    #endregion
-
-    #region Upsert Behaviour
-
     [Fact]
-    public async Task UpsertPricesAsync_ReImport_SameData_DoesNotDuplicate()
+    public async Task UpsertPricesAsync_ReImport_SameSnapshot_IsIgnoredInSnapshots()
     {
         var item = await SeedItemAsync();
         var variant = await SeedVariantAsync(item);
-
-        var prices = new List<SkinPrice>
-        {
-            BuildPrice(variant.Id, variant.Slug),
-        };
+        var prices = new List<SkinPrice> { BuildPrice(variant.Id, variant.Slug) };
 
         await _repository.UpsertPricesAsync(prices, CancellationToken.None);
         await _repository.UpsertPricesAsync(prices, CancellationToken.None);
 
-        var count = await _db.Prices.CountAsync();
-        Assert.Equal(1, count);
+        Assert.Equal(1, await _db.Prices.CountAsync());
     }
 
     [Fact]
-    public async Task UpsertPricesAsync_ReImport_SameSnapshot_IsIgnored()
-    {
-        var item = await SeedItemAsync();
-        var variant = await SeedVariantAsync(item);
-
-        var original = new List<SkinPrice>
-        {
-            BuildPrice(variant.Id, variant.Slug, price: 10m, volume: 100),
-        };
-
-        var duplicate = new List<SkinPrice>
-        {
-            BuildPrice(variant.Id, variant.Slug, price: 15m, volume: 200),
-        };
-
-        await _repository.UpsertPricesAsync(original, CancellationToken.None);
-        await _repository.UpsertPricesAsync(duplicate, CancellationToken.None);
-
-        var stored = await _db.Prices.SingleAsync();
-        Assert.Equal(10m, stored.Price);
-        Assert.Equal(100, stored.Volume);
-    }
-
-    [Fact]
-    public async Task UpsertPricesAsync_DuplicatesInSameBatch_LastOneWins()
+    public async Task UpsertPricesAsync_DuplicatesInSameBatch_LastOneWinsInSnapshots()
     {
         var item = await SeedItemAsync();
         var variant = await SeedVariantAsync(item);
@@ -380,6 +203,217 @@ public class PriceRepositoryTests(PostgresFixture fixture)
 
         var stored = await _db.Prices.SingleAsync();
         Assert.Equal(99m, stored.Price);
+    }
+
+    #endregion
+
+    #region UpsertPricesAsync — current_prices
+
+    [Fact]
+    public async Task UpsertPricesAsync_NewPrices_WritesLatestToCurrentPrices()
+    {
+        var item = await SeedItemAsync();
+        var variant = await SeedVariantAsync(item);
+
+        var prices = new List<SkinPrice>
+        {
+            BuildPrice(variant.Id, variant.Slug, price: 10m, recordedAt: new DateTime(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc)),
+            BuildPrice(variant.Id, variant.Slug, price: 11m, recordedAt: new DateTime(2021, 1, 2, 0, 0, 0, DateTimeKind.Utc)),
+            BuildPrice(variant.Id, variant.Slug, price: 12m, recordedAt: new DateTime(2021, 1, 3, 0, 0, 0, DateTimeKind.Utc)),
+        };
+
+        await _repository.UpsertPricesAsync(prices, CancellationToken.None);
+
+        var current = await _db.CurrentPrices.SingleAsync();
+        Assert.Equal(12m, current.Price);
+        Assert.Equal(new DateTime(2021, 1, 3, 0, 0, 0, DateTimeKind.Utc), current.RecordedAt);
+    }
+
+    [Fact]
+    public async Task UpsertPricesAsync_MultipleItems_OneCurrentPriceRowPerVariant()
+    {
+        var item1 = await SeedItemAsync(slug: "ak-47-redline");
+        var item2 = await SeedItemAsync(slug: "m4a4-howl");
+        var variant1 = await SeedVariantAsync(item1);
+        var variant2 = await SeedVariantAsync(item2);
+
+        var prices = new List<SkinPrice>
+        {
+            BuildPrice(variant1.Id, variant1.Slug, price: 10m, recordedAt: new DateTime(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc)),
+            BuildPrice(variant1.Id, variant1.Slug, price: 15m, recordedAt: new DateTime(2021, 1, 2, 0, 0, 0, DateTimeKind.Utc)),
+            BuildPrice(variant2.Id, variant2.Slug, price: 500m, recordedAt: new DateTime(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc)),
+            BuildPrice(variant2.Id, variant2.Slug, price: 550m, recordedAt: new DateTime(2021, 1, 2, 0, 0, 0, DateTimeKind.Utc)),
+        };
+
+        await _repository.UpsertPricesAsync(prices, CancellationToken.None);
+
+        var current = await _db.CurrentPrices.ToListAsync();
+        Assert.Equal(2, current.Count);
+        Assert.Contains(current, p => p.VariantId == variant1.Id && p.Price == 15m);
+        Assert.Contains(current, p => p.VariantId == variant2.Id && p.Price == 550m);
+    }
+
+    [Fact]
+    public async Task UpsertPricesAsync_MultipleSources_OneCurrentPriceRowPerSource()
+    {
+        var item = await SeedItemAsync();
+        var variant = await SeedVariantAsync(item);
+
+        var prices = new List<SkinPrice>
+        {
+            BuildPrice(variant.Id, variant.Slug, price: 10m, source: Sources.KaggleSteam),
+            BuildPrice(variant.Id, variant.Slug, price: 11m, source: "steam-market"),
+        };
+
+        await _repository.UpsertPricesAsync(prices, CancellationToken.None);
+
+        var current = await _db.CurrentPrices.ToListAsync();
+        Assert.Equal(2, current.Count);
+        Assert.Contains(current, p => p.Source == Sources.KaggleSteam && p.Price == 10m);
+        Assert.Contains(current, p => p.Source == "steam-market" && p.Price == 11m);
+    }
+
+    [Fact]
+    public async Task UpsertPricesAsync_ReImport_NewerSnapshot_UpdatesCurrentPrice()
+    {
+        var item = await SeedItemAsync();
+        var variant = await SeedVariantAsync(item);
+
+        await _repository.UpsertPricesAsync(
+            [BuildPrice(variant.Id, variant.Slug, price: 10m, recordedAt: new DateTime(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc))],
+            CancellationToken.None);
+
+        await _repository.UpsertPricesAsync(
+            [BuildPrice(variant.Id, variant.Slug, price: 20m, recordedAt: new DateTime(2021, 1, 2, 0, 0, 0, DateTimeKind.Utc))],
+            CancellationToken.None);
+
+        var current = await _db.CurrentPrices.SingleAsync();
+        Assert.Equal(20m, current.Price);
+    }
+
+    [Fact]
+    public async Task UpsertPricesAsync_ReImport_OlderSnapshot_DoesNotDowngradeCurrentPrice()
+    {
+        var item = await SeedItemAsync();
+        var variant = await SeedVariantAsync(item);
+
+        await _repository.UpsertPricesAsync(
+            [BuildPrice(variant.Id, variant.Slug, price: 20m, recordedAt: new DateTime(2021, 1, 2, 0, 0, 0, DateTimeKind.Utc))],
+            CancellationToken.None);
+
+        await _repository.UpsertPricesAsync(
+            [BuildPrice(variant.Id, variant.Slug, price: 10m, recordedAt: new DateTime(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc))],
+            CancellationToken.None);
+
+        var current = await _db.CurrentPrices.SingleAsync();
+        Assert.Equal(20m, current.Price);
+    }
+
+    [Fact]
+    public async Task UpsertPricesAsync_NullVolume_CurrentPriceHasNullVolume()
+    {
+        var item = await SeedItemAsync();
+        var variant = await SeedVariantAsync(item);
+
+        await _repository.UpsertPricesAsync(
+            [BuildPrice(variant.Id, variant.Slug, volume: null)],
+            CancellationToken.None);
+
+        var current = await _db.CurrentPrices.SingleAsync();
+        Assert.Null(current.Volume);
+    }
+
+    #endregion
+
+    #region GetCurrentPricesByGameAsync
+
+    [Fact]
+    public async Task GetCurrentPricesByGameAsync_NoItems_ReturnsEmpty()
+    {
+        var result = await _repository.GetCurrentPricesByGameAsync("cs2", NoFilter(), CancellationToken.None);
+
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public async Task GetCurrentPricesByGameAsync_FiltersByGameId()
+    {
+        var cs2Item = await SeedItemAsync(slug: "ak-47-redline", gameId: "cs2");
+        var tf2Item = await SeedItemAsync(slug: "ak-47-redline", gameId: "tf2");
+        var cs2Variant = await SeedVariantAsync(cs2Item);
+        var tf2Variant = await SeedVariantAsync(tf2Item);
+
+        await _repository.UpsertPricesAsync(
+            [
+                BuildPrice(cs2Variant.Id, cs2Variant.Slug, gameId: "cs2", price: 10m),
+                BuildPrice(tf2Variant.Id, tf2Variant.Slug, gameId: "tf2", price: 99m),
+            ],
+            CancellationToken.None);
+
+        var result = await _repository.GetCurrentPricesByGameAsync("cs2", NoFilter(), CancellationToken.None);
+
+        Assert.Single(result);
+        Assert.Equal(cs2Variant.Id, result[0].VariantId);
+    }
+
+    [Fact]
+    public async Task GetCurrentPricesByGameAsync_FiltersByPriceType_ReturnsOnlyMatchingType()
+    {
+        var item = await SeedItemAsync();
+        var variant = await SeedVariantAsync(item);
+
+        await _repository.UpsertPricesAsync(
+            [
+                BuildPrice(variant.Id, variant.Slug, price: 10m, priceType: PriceTypes.MedianDaily,
+                    recordedAt: new DateTime(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc)),
+                BuildPrice(variant.Id, variant.Slug, price: 11m, priceType: PriceTypes.LowestListing,
+                    recordedAt: new DateTime(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc)),
+            ],
+            CancellationToken.None);
+
+        var result = await _repository.GetCurrentPricesByGameAsync(
+            "cs2", new PriceQueryParams { PriceType = PriceTypes.MedianDaily }, CancellationToken.None);
+
+        Assert.Single(result);
+        Assert.Equal(PriceTypes.MedianDaily, result[0].PriceType);
+        Assert.Equal(10m, result[0].Price);
+    }
+
+    [Fact]
+    public async Task GetCurrentPricesByGameAsync_FiltersByPriceType_NoMatch_ReturnsEmpty()
+    {
+        var item = await SeedItemAsync();
+        var variant = await SeedVariantAsync(item);
+
+        await _repository.UpsertPricesAsync(
+            [BuildPrice(variant.Id, variant.Slug, priceType: PriceTypes.MedianDaily)],
+            CancellationToken.None);
+
+        var result = await _repository.GetCurrentPricesByGameAsync(
+            "cs2", new PriceQueryParams { PriceType = PriceTypes.LowestListing }, CancellationToken.None);
+
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public async Task GetCurrentPricesByGameAsync_FiltersBySource_ReturnsOnlyMatchingSource()
+    {
+        var item = await SeedItemAsync();
+        var variant = await SeedVariantAsync(item);
+
+        await _repository.UpsertPricesAsync(
+            [
+                BuildPrice(variant.Id, variant.Slug, price: 10m, source: Sources.KaggleSteam),
+                BuildPrice(variant.Id, variant.Slug, price: 11m, source: "steam-market"),
+            ],
+            CancellationToken.None);
+
+        var result = await _repository.GetCurrentPricesByGameAsync(
+            "cs2", new PriceQueryParams { Source = Sources.KaggleSteam }, CancellationToken.None);
+
+        Assert.Single(result);
+        Assert.Equal(Sources.KaggleSteam, result[0].Source);
+        Assert.Equal(10m, result[0].Price);
     }
 
     #endregion
