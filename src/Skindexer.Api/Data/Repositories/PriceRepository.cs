@@ -20,40 +20,33 @@ public class PriceRepository : IPriceRepository
         _logger = logger;
     }
 
-    public async Task<IReadOnlyList<SkinPrice>> GetCurrentPricesByGameAsync(string gameId, PriceQueryParams query,
-        CancellationToken ct = default)
+    public async Task<IReadOnlyList<SkinPrice>> GetCurrentPricesByGameAsync(
+        string gameId, PriceQueryParams query, CancellationToken ct = default)
     {
-        var conditions = new List<string> { "p.game_id = {0}" };
-        var parameters = new List<object> { gameId };
+        var q = _db.CurrentPrices.Where(p => p.GameId == gameId);
 
         if (query.PriceType is not null)
-        {
-            conditions.Add($"p.price_type = {{{parameters.Count}}}");
-            parameters.Add(query.PriceType);
-        }
+            q = q.Where(p => p.PriceType == query.PriceType);
 
         if (query.Source is not null)
+            q = q.Where(p => p.Source == query.Source);
+
+        var rows = await q.ToListAsync(ct);
+
+        return rows.Select(p => new SkinPrice
         {
-            conditions.Add($"p.source = '{query.Source}'");
-            parameters.Add(query.Source);
-        }
-
-        var where = string.Join(" AND ", conditions);
-
-        var sql = $"""
-                   SELECT DISTINCT ON (p.variant_id, p.source, p.price_type)
-                       p.variant_id, p.game_id, p.slug, p.source, p.price_type,
-                       p.price, p.currency, p.volume, p.recorded_at
-                   FROM price_snapshots p
-                   WHERE {where}
-                   ORDER BY p.variant_id, p.source, p.price_type, p.recorded_at DESC
-                   """;
-
-        return await _db.Database
-            .SqlQueryRaw<SkinPrice>(sql, parameters.ToArray())
-            .ToListAsync(ct);
+            VariantId = p.VariantId,
+            GameId = p.GameId,
+            Slug = p.Slug,
+            Source = p.Source,
+            PriceType = p.PriceType,
+            Price = p.Price,
+            Currency = p.Currency,
+            Volume = p.Volume,
+            RecordedAt = p.RecordedAt
+        }).ToList();
     }
-    
+
     public async Task InsertPricesAsync(IReadOnlyList<SkinPrice> prices, CancellationToken ct = default)
     {
         if (prices.Count == 0) return;
@@ -137,7 +130,7 @@ public class PriceRepository : IPriceRepository
                 await writer.CompleteAsync(ct);
             }
 
-            // Step 3 — Upsert from staging
+            // Step 3 — Upsert from staging into price_snapshots
             await using (var upsertCmd = conn.CreateCommand())
             {
                 upsertCmd.Transaction = transaction;
@@ -151,12 +144,37 @@ public class PriceRepository : IPriceRepository
                 var inserted = await upsertCmd.ExecuteNonQueryAsync(ct);
                 var skipped = deduped.Count - inserted;
 
-                await transaction.CommitAsync(ct);
-
                 _logger.LogInformation(
-                    "BulkUpsertPrices complete — {Total} processed ({Inserted} inserted, {Skipped} skipped)",
+                    "BulkUpsertPrices — snapshots: {Total} processed ({Inserted} inserted, {Skipped} skipped)",
                     deduped.Count, inserted, skipped);
             }
+
+            // Step 4 — Upsert latest price per (variant, source, price_type) into current_prices
+            await using (var currentCmd = conn.CreateCommand())
+            {
+                currentCmd.Transaction = transaction;
+                currentCmd.CommandText = """
+                                         INSERT INTO current_prices (variant_id, game_id, slug, source, price_type, price, currency, volume, recorded_at)
+                                         SELECT DISTINCT ON (variant_id, source, price_type)
+                                             variant_id, game_id, slug, source, price_type, price, currency, volume, recorded_at
+                                         FROM price_snapshots_staging
+                                         ORDER BY variant_id, source, price_type, recorded_at DESC
+                                         ON CONFLICT (variant_id, source, price_type) DO UPDATE SET
+                                             price       = EXCLUDED.price,
+                                             volume      = EXCLUDED.volume,
+                                             recorded_at = EXCLUDED.recorded_at,
+                                             slug        = EXCLUDED.slug
+                                         WHERE EXCLUDED.recorded_at > current_prices.recorded_at
+                                         """;
+
+                var currentUpdated = await currentCmd.ExecuteNonQueryAsync(ct);
+
+                _logger.LogInformation(
+                    "BulkUpsertPrices — current_prices: {Updated} rows upserted",
+                    currentUpdated);
+            }
+
+            await transaction.CommitAsync(ct);
         }
         catch (Exception ex)
         {
