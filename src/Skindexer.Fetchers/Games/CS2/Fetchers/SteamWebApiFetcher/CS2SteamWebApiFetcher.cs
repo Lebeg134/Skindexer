@@ -9,6 +9,10 @@ using Skindexer.Fetchers.Interfaces;
 
 namespace Skindexer.Fetchers.Games.CS2.Fetchers.SteamWebApiFetcher;
 
+/// <summary>
+/// To find out more details about the SteamWebAPI visit:
+/// https://www.steamwebapi.com/
+/// </summary>
 public sealed class CS2SteamWebApiFetcher : IScheduledFetcher
 {
     private const string GameId = GameIds.CounterStrike;

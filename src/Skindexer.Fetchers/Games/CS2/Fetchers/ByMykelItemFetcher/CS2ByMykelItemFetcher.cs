@@ -12,6 +12,10 @@ using CS2ByMykelSlugHelper = Skindexer.Fetchers.Games.CS2.Fetchers.ByMykelItemFe
 
 namespace Skindexer.Fetchers.Games.CS2.Fetchers.ByMykelItemFetcher;
 
+/// <summary>
+/// To find out more details about the CSGO api visit:
+/// https://bymykel.com/CSGO-API/
+/// </summary>
 public class CS2ByMykelItemFetcher : IScheduledFetcher
 {
     private const string GameId = GameIds.CounterStrike;
