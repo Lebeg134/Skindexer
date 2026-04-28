@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
+using Skindexer.Fetchers.Games.CS2.SlugHelpers;
 
-namespace Skindexer.Fetchers.Games.CS2.Fetchers.ByMykelItemFetcher.SlugHelpers;
+namespace Skindexer.Fetchers.Games.CS2.Fetchers.ByMykelItemFetcher;
 
 public static partial class CS2ByMykelSlugHelper
 {
@@ -8,35 +9,32 @@ public static partial class CS2ByMykelSlugHelper
 
     /// <summary>
     /// Produces a canonical base slug from a ByMykel item name.
-    /// e.g. "AK-47 | Redline"                  → "ak-47-redline"
-    ///      "★ Karambit"                        → "karambit"
+    /// e.g. "AK-47 | Redline"  → "ak-47-redline"
+    ///      "★ Karambit"        → "karambit"
     /// </summary>
     public static string GenerateSlug(string name) => Slugify(name);
 
     /// <summary>
     /// Produces a canonical variant slug from an item slug, wear, StatTrak and Souvenir flags.
-    /// Aligns with CS2KaggleSlugHelper.BuildPriceSlug format.
-    /// e.g. itemSlug: "ak-47-redline", wear: "Field-Tested", statTrak: false → "ak-47-redline-field-tested"
-    ///      itemSlug: "ak-47-redline", wear: "Minimal Wear",  statTrak: true  → "ak-47-redline-stattrak-minimal-wear"
-    ///      itemSlug: "ak-47-redline", wear: "Factory New",   souvenir: true  → "ak-47-redline-souvenir-factory-new"
+    /// Delegates to CS2SlugBuilder for consistency across all fetchers.
+    ///
+    /// e.g. itemSlug: "ak-47-redline", wear: "Field-Tested", statTrak: false
+    ///      → "ak-47-redline-field-tested"
+    ///      itemSlug: "ak-47-redline", wear: "Minimal Wear", statTrak: true
+    ///      → "ak-47-redline-stattrak-minimal-wear"
     /// </summary>
-    public static string BuildVariantSlug(string itemSlug, string wear, bool statTrak, bool souvenir)
-    {
-        var wearSlug = CS2WearHelper.WearSlugs.GetValueOrDefault(wear, Slugify(wear));
+    public static string BuildVariantSlug(
+        string itemSlug,
+        string wear,
+        bool statTrak,
+        bool souvenir)
+        => CS2SlugBuilder.BuildVariantSlug(itemSlug, wear, statTrak, souvenir);
 
-        var parts = new List<string> { itemSlug };
-
-        if (statTrak)
-            parts.Add("stattrak");
-
-        if (souvenir)
-            parts.Add("souvenir");
-
-        parts.Add(wearSlug);
-
-        return string.Join("-", parts);
-    }
-
+    /// <summary>
+    /// Slugifies a raw ByMykel item name, stripping wear suffixes, special
+    /// characters, and normalising to kebab-case.
+    /// Internal — used only for GenerateSlug (item-level, not variant-level).
+    /// </summary>
     private static string Slugify(string value) =>
         WearPattern.Replace(value, "")
             .ToLowerInvariant()

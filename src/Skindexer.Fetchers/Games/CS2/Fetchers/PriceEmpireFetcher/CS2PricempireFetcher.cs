@@ -4,8 +4,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Skindexer.Contracts.Constants;
 using Skindexer.Contracts.Models;
-using Skindexer.Fetchers.Games.CS2.Fetchers.KaggleFetcher.SlugHelpers;
-using Skindexer.Fetchers.Games.CS2.Fetchers.PriceEmpireFetcher.DTOs;
 using Skindexer.Fetchers.Games.CS2.SlugHelpers;
 using Skindexer.Fetchers.Interfaces;
 
@@ -26,7 +24,7 @@ namespace Skindexer.Fetchers.Games.CS2.Fetchers.PriceEmpireFetcher;
 /// Item catalog comes from CS2ByMykelItemFetcher.
 ///
 /// Slug resolution: market_hash_name is parsed by CS2MarketHashNameParser
-/// then built into a canonical slug via CS2KaggleSlugHelper.BuildPriceSlug.
+/// then built into a canonical slug via CS2SlugBuilder.BuildVariantSlug.
 /// This matches the slug format already in the database from Kaggle import.
 /// VariantId is left as Guid.Empty — FetchResultPersister resolves it via slug map.
 /// </summary>
@@ -150,7 +148,7 @@ public sealed class CS2PricempireFetcher : IScheduledFetcher
                 continue;
             }
 
-            var slug = CS2KaggleSlugHelper.BuildPriceSlug(
+            var slug = CS2SlugBuilder.BuildVariantSlug(
                 weapon, skinName, wear, isStatTrak, isSouvenir);
 
             foreach (var priceEntry in item.Prices)
