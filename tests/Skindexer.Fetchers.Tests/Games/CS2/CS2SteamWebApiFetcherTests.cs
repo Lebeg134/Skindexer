@@ -439,7 +439,7 @@ public class CS2SteamWebApiFetcherTests
 
     #region File-Based
 
-    [Fact(Skip = "Requires downloaded SteamWebApi response file. See GitHub issue.")]
+    [Fact]
     public async Task FetchAsync_RealResponseFile_ParsesWithoutErrors()
     {
         var json    = await File.ReadAllTextAsync("TestData/SteamWebApi/prices_response.json");
@@ -452,6 +452,8 @@ public class CS2SteamWebApiFetcherTests
         Assert.NotEmpty(result.Items);
         Assert.NotEmpty(result.Variants);
         Assert.NotEmpty(result.Prices);
+        Assert.Equal(115, result.Items.Count);
+        Assert.Equal(558, result.Prices.Count);
     }
 
     #endregion
