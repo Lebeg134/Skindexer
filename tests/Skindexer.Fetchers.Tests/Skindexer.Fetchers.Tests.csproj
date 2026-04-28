@@ -25,12 +25,14 @@
     <None Update="TestData\Kaggle\**\*">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="TestData\SteamWebApi\**\*">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
   <ItemGroup>
     <Folder Include="TestData\PriceEmpire\" />
     <Folder Include="TestData\SteamAnalyst\" />
-    <Folder Include="TestData\SteamWebApi\" />
   </ItemGroup>
 
 </Project>
