@@ -10,6 +10,9 @@ public static class Sources
 
     /// <summary>Pricempire aggregated data — top-level source label used on FetchResult.</summary>
     public const string Pricempire = "pricempire";
+    
+    /// <summary>SteamWebApi — bulk item + price data including buy orders and third-party market prices.</summary>
+    public const string SteamWebApi = "steamwebapi";
 
     // Per-marketplace sources from Pricempire.
     // Format: "pricempire-{provider_key}" to avoid collisions with other fetchers.
