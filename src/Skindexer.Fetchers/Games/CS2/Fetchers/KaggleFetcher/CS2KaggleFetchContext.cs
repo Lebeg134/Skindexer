@@ -1,4 +1,4 @@
-namespace Skindexer.Fetchers.Games.CS2.Fetchers;
+namespace Skindexer.Fetchers.Games.CS2.Fetchers.KaggleFetcher;
 
 public class CS2KaggleFetchContext
 {

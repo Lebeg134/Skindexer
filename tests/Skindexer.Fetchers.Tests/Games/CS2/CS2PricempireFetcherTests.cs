@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Skindexer.Contracts.Constants;
 using Skindexer.Fetchers.Games.CS2.Fetchers;
+using Skindexer.Fetchers.Games.CS2.Fetchers.PriceEmpireFetcher;
 
 namespace Skindexer.Fetchers.Tests.Games.CS2;
 

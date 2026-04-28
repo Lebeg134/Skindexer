@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 
-namespace Skindexer.Fetchers.Games.CS2.SlugHelpers;
+namespace Skindexer.Fetchers.Games.CS2.Fetchers.ByMykelItemFetcher.SlugHelpers;
 
 public static partial class CS2ByMykelSlugHelper
 {

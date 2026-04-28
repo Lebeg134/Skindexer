@@ -1,6 +1,7 @@
 using Skindexer.Api.Features.Variants;
 using Skindexer.Contracts.Constants;
 using Skindexer.Fetchers.Games.CS2.Fetchers;
+using Skindexer.Fetchers.Games.CS2.Fetchers.KaggleFetcher;
 using Skindexer.Fetchers.Interfaces;
 
 namespace Skindexer.Api.Features.Import;

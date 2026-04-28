@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Skindexer.Fetchers.Games.CS2.Fetchers;
+using Skindexer.Fetchers.Games.CS2.Fetchers.KaggleFetcher;
 using Skindexer.Fetchers.Games.CS2.Mappers;
 using Skindexer.Fetchers.Games.Rust;
 using Skindexer.Fetchers.Interfaces;

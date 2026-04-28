@@ -2,27 +2,28 @@ using Microsoft.Extensions.Logging;
 using Skindexer.Contracts.Constants;
 using Skindexer.Contracts.Models;
 using Skindexer.Contracts.Models.Metadata;
-using Skindexer.Fetchers.Games.CS2.Fetchers.DTOs;
-using Skindexer.Fetchers.Games.CS2.Mappers;
+using Skindexer.Fetchers.Games.CS2.Fetchers.ByMykelItemFetcher.DTOs;
 
-namespace Skindexer.Fetchers.Games.CS2.Mappers;
+namespace Skindexer.Fetchers.Games.CS2.Fetchers.ByMykelItemFetcher.Mappers;
 
-public class CS2ByMykelMusicKitMapper(ILogger<CS2ByMykelMusicKitMapper> logger)
-    : CS2ByMykelMapperBase<ByMykelMusicKit>(logger, "music_kits.json", CS2ItemTypes.MusicKit)
+public class CS2ByMykelCollectibleMapper(ILogger<CS2ByMykelCollectibleMapper> logger)
+    : CS2ByMykelMapperBase<ByMykelCollectible>(logger, "collectibles.json", CS2ItemTypes.Collectible)
 {
-    protected override string? GetName(ByMykelMusicKit dto) => dto.Name;
-    protected override string? GetDiscriminator(ByMykelMusicKit dto) => dto.DefIndex;
+    protected override string? GetName(ByMykelCollectible dto) => dto.Name;
+    protected override string? GetDiscriminator(ByMykelCollectible dto) => dto.DefIndex;
 
-    protected override SkinItem? MapItem(ByMykelMusicKit dto, string slug)
+    protected override SkinItem? MapItem(ByMykelCollectible dto, string slug)
     {
         if (string.IsNullOrWhiteSpace(dto.Id) || string.IsNullOrWhiteSpace(dto.Name))
             return null;
 
-        var metadata = new CS2MusicKitMetadata
+        var metadata = new CS2CollectibleMetadata
         {
             Rarity = dto.Rarity?.Name,
             RarityColor = dto.Rarity?.Color,
-            Exclusive = dto.Exclusive,
+            Type = dto.Type,
+            Genuine = dto.Genuine,
+            DefIndex = dto.DefIndex,
         };
 
         return new SkinItem

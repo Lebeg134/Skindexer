@@ -1,6 +1,6 @@
 using Skindexer.Contracts.Constants;
 
-namespace Skindexer.Fetchers.Games.CS2.Fetchers;
+namespace Skindexer.Fetchers.Games.CS2.Fetchers.PriceEmpireFetcher;
 
 /// <summary>
 /// Maps raw Pricempire provider_key strings to canonical Source constants

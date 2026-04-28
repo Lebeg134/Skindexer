@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Skindexer.Fetchers.Games.CS2.Fetchers.DTOs;
+namespace Skindexer.Fetchers.Games.CS2.Fetchers.ByMykelItemFetcher.DTOs;
 
 public record ByMykelSkin(
     string? Id,

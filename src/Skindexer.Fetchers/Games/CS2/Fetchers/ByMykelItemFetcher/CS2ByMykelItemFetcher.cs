@@ -3,12 +3,14 @@ using System.Text.Json;
 using Skindexer.Contracts.Constants;
 using Skindexer.Contracts.Models;
 using Skindexer.Contracts.Models.Metadata;
-using Skindexer.Fetchers.Games.CS2.Fetchers.DTOs;
+using Skindexer.Fetchers.Games.CS2.Fetchers.ByMykelItemFetcher.DTOs;
+using Skindexer.Fetchers.Games.CS2.Fetchers.ByMykelItemFetcher.Mappers;
 using Skindexer.Fetchers.Games.CS2.Mappers;
 using Skindexer.Fetchers.Games.CS2.SlugHelpers;
 using Skindexer.Fetchers.Interfaces;
+using CS2ByMykelSlugHelper = Skindexer.Fetchers.Games.CS2.Fetchers.ByMykelItemFetcher.SlugHelpers.CS2ByMykelSlugHelper;
 
-namespace Skindexer.Fetchers.Games.CS2.Fetchers;
+namespace Skindexer.Fetchers.Games.CS2.Fetchers.ByMykelItemFetcher;
 
 public class CS2ByMykelItemFetcher : IScheduledFetcher
 {

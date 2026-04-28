@@ -2,10 +2,11 @@ using Microsoft.Extensions.Logging;
 using Skindexer.Contracts.Constants;
 using Skindexer.Contracts.Models;
 using Skindexer.Contracts.Models.Metadata;
-using Skindexer.Fetchers.Games.CS2.Fetchers.DTOs;
+using Skindexer.Fetchers.Games.CS2.Fetchers.ByMykelItemFetcher.DTOs;
 using Skindexer.Fetchers.Games.CS2.SlugHelpers;
+using CS2ByMykelSlugHelper = Skindexer.Fetchers.Games.CS2.Fetchers.ByMykelItemFetcher.SlugHelpers.CS2ByMykelSlugHelper;
 
-namespace Skindexer.Fetchers.Games.CS2.Mappers;
+namespace Skindexer.Fetchers.Games.CS2.Fetchers.ByMykelItemFetcher.Mappers;
 
 public class CS2ByMykelSkinMapper(ILogger<CS2ByMykelSkinMapper> logger)
     : CS2ByMykelMapperBase<ByMykelSkin>(logger, "skins.json", CS2ItemTypes.WeaponSkin)
