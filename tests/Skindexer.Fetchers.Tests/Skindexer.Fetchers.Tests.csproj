@@ -22,15 +22,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="TestData\Kaggle\**\*">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="TestData\SteamWebApi\**\*">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
+    <Content Include="TestData\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="TestData\CS2Sh\" />
     <Folder Include="TestData\PriceEmpire\" />
     <Folder Include="TestData\SteamAnalyst\" />
   </ItemGroup>

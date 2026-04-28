@@ -36,6 +36,8 @@ public sealed class CS2PricempireFetcher : IScheduledFetcher
 
     public string FetcherId    => "cs2-pricempire";
     public string DisplayName  => "CS2 Pricempire Price Fetcher";
+    
+    public bool IsAuthoritativeItemSource { get; } = false;
     public TimeSpan PollingInterval => TimeSpan.FromHours(24);
 
     // -------------------------------------------------------------------------

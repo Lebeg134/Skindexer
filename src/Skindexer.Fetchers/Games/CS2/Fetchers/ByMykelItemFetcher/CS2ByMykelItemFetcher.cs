@@ -46,6 +46,8 @@ public class CS2ByMykelItemFetcher : IScheduledFetcher
 
     public string FetcherId => "cs2-bymykel";
     public string DisplayName => "CSGO-API (ByMykel)";
+    
+    public bool IsAuthoritativeItemSource { get; } = true;
 
     // TODO: make PollingInterval configurable via appsettings.json (CS2ByMykelItemFetcherOptions)
     public TimeSpan PollingInterval => TimeSpan.FromDays(1);
@@ -100,8 +102,8 @@ public class CS2ByMykelItemFetcher : IScheduledFetcher
             
             
         return warnings.Count > 0
-            ? FetchResult.Partial(GameId, Source, items, variants, [], warnings)
-            : FetchResult.Success(GameId, Source, items, variants, []);
+            ? FetchResult.Partial(GameId, Source, items, variants, [], warnings, IsAuthoritativeItemSource)
+            : FetchResult.Success(GameId, Source, items, variants, [], IsAuthoritativeItemSource);
     }
 
 

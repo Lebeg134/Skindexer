@@ -503,7 +503,7 @@ public class CS2CS2ShFetcherTests
 
     #region File-Based
 
-    [Fact(Skip = "Requires downloaded cs2.sh response file. See GitHub issue.")]
+    [Fact]
     public async Task FetchAsync_RealResponseFile_ParsesWithoutErrors()
     {
         var json = await File.ReadAllTextAsync("TestData/CS2Sh/prices_response.json");

@@ -24,6 +24,8 @@ public sealed class CS2CS2ShFetcher : IScheduledFetcher
 
     public string FetcherId      => "cs2-cs2sh";
     public string DisplayName    => "CS2 cs2.sh";
+    
+    public bool IsAuthoritativeItemSource { get; } = false;
     public TimeSpan PollingInterval => TimeSpan.FromHours(1);
 
     public CS2CS2ShFetcher(

@@ -11,6 +11,8 @@ public class RustFetcher : IScheduledFetcher
 
     public string FetcherId => "rust";
     public string DisplayName => "Rust";
+    
+    public bool IsAuthoritativeItemSource { get; } = false;
     public TimeSpan PollingInterval => TimeSpan.FromMinutes(15);
 
     public RustFetcher(HttpClient http, ILogger<RustFetcher> logger)

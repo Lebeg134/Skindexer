@@ -26,6 +26,8 @@ public sealed class CS2SteamWebApiFetcher : IScheduledFetcher
 
     public string FetcherId => "cs2-steamwebapi";
     public string DisplayName => "CS2 SteamWebApi";
+    
+    public bool IsAuthoritativeItemSource { get; } = false;
     public TimeSpan PollingInterval => TimeSpan.FromHours(6);
 
     public CS2SteamWebApiFetcher(
@@ -63,6 +65,8 @@ public sealed class CS2SteamWebApiFetcher : IScheduledFetcher
 
         return MapResults(raw);
     }
+
+    
 
     private FetchResult MapResults(List<SteamWebApiItemDto> raw)
     {
