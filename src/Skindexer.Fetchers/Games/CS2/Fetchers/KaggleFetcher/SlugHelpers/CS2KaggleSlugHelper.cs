@@ -1,4 +1,4 @@
-namespace Skindexer.Fetchers.Games.CS2.SlugHelpers;
+namespace Skindexer.Fetchers.Games.CS2.Fetchers.KaggleFetcher.SlugHelpers;
 
 public static class CS2KaggleSlugHelper
 {

@@ -1,4 +1,5 @@
 using Skindexer.Fetchers.Games.CS2.Fetchers;
+using Skindexer.Fetchers.Games.CS2.Fetchers.KaggleFetcher;
 
 namespace Skindexer.Fetchers.Tests.Games.CS2;
 

@@ -4,11 +4,12 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Skindexer.Contracts.Constants;
 using Skindexer.Contracts.Models;
-using Skindexer.Fetchers.Games.CS2.Fetchers.DTOs;
+using Skindexer.Fetchers.Games.CS2.Fetchers.KaggleFetcher.SlugHelpers;
+using Skindexer.Fetchers.Games.CS2.Fetchers.PriceEmpireFetcher.DTOs;
 using Skindexer.Fetchers.Games.CS2.SlugHelpers;
 using Skindexer.Fetchers.Interfaces;
 
-namespace Skindexer.Fetchers.Games.CS2.Fetchers;
+namespace Skindexer.Fetchers.Games.CS2.Fetchers.PriceEmpireFetcher;
 
 /// <summary>
 /// Fetches live CS2 skin prices from Pricempire's bulk endpoint.

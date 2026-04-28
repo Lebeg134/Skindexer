@@ -2,9 +2,9 @@ using Microsoft.Extensions.Logging;
 using Skindexer.Contracts.Constants;
 using Skindexer.Contracts.Models;
 using Skindexer.Contracts.Models.Metadata;
-using Skindexer.Fetchers.Games.CS2.Fetchers.DTOs;
+using Skindexer.Fetchers.Games.CS2.Fetchers.ByMykelItemFetcher.DTOs;
 
-namespace Skindexer.Fetchers.Games.CS2.Mappers;
+namespace Skindexer.Fetchers.Games.CS2.Fetchers.ByMykelItemFetcher.Mappers;
 
 public class CS2ByMykelPatchMapper(ILogger<CS2ByMykelPatchMapper> logger)
     : CS2ByMykelMapperBase<ByMykelPatch>(logger, "patches.json", CS2ItemTypes.Patch)

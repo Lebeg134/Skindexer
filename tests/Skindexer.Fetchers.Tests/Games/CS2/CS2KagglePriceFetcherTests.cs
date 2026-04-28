@@ -3,6 +3,7 @@ using Microsoft.Extensions.Options;
 using NSubstitute;
 using Skindexer.Contracts.Constants;
 using Skindexer.Fetchers.Games.CS2.Fetchers;
+using Skindexer.Fetchers.Games.CS2.Fetchers.KaggleFetcher;
 using Skindexer.Fetchers.Options;
 
 namespace Skindexer.Fetchers.Tests.Games.CS2;

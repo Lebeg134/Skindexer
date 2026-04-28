@@ -1,4 +1,4 @@
-namespace Skindexer.Fetchers.Games.CS2.Fetchers.DTOs;
+namespace Skindexer.Fetchers.Games.CS2.Fetchers.ByMykelItemFetcher.DTOs;
 
 public record ByMykelRarity(
     string? Id,

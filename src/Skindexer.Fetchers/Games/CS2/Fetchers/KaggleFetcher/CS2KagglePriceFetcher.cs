@@ -7,11 +7,12 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Skindexer.Contracts.Constants;
 using Skindexer.Contracts.Models;
+using Skindexer.Fetchers.Games.CS2.Fetchers.KaggleFetcher.SlugHelpers;
 using Skindexer.Fetchers.Games.CS2.SlugHelpers;
 using Skindexer.Fetchers.Interfaces;
 using Skindexer.Fetchers.Options;
 
-namespace Skindexer.Fetchers.Games.CS2.Fetchers;
+namespace Skindexer.Fetchers.Games.CS2.Fetchers.KaggleFetcher;
 
 /// <summary>
 /// Fetches CS2 prices from the Kaggle Steam dataset.
