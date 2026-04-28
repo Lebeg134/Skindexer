@@ -9,6 +9,23 @@ public static class PriceTypes
     public const string Median7d = "median_7d";
     public const string Median30d = "median_30d";
     
+    /// <summary>
+    /// Most recent actual sale price on Steam Market.
+    /// Maps to SteamWebApi `pricelatestsell` field.
+    /// </summary>
+    public const string LastSold = "last_sold";
+
+    /// <summary>
+    /// Highest active Steam buy order price.
+    /// Maps to SteamWebApi `buyorderprice` field.
+    /// </summary>
+    public const string BuyOrder = "buy_order";
+
+    /// <summary>
+    /// Lowest price available across third-party markets.
+    /// Maps to SteamWebApi `pricereal` field.
+    /// </summary>
+    public const string LowestMarket = "lowest_market";
     
     /// <summary>
     /// SteamAnalyst safe_price_raw — fallback price used when ongoing price

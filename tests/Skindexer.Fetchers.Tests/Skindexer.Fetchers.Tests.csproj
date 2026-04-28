@@ -30,6 +30,7 @@
   <ItemGroup>
     <Folder Include="TestData\PriceEmpire\" />
     <Folder Include="TestData\SteamAnalyst\" />
+    <Folder Include="TestData\SteamWebApi\" />
   </ItemGroup>
 
 </Project>
