@@ -20,4 +20,8 @@ public static class Sources
     public const string PricempireSkinbaron = "pricempire-skinbaron";
     public const string PricempireCSFloat   = "pricempire-csfloat";
     public const string PricempireWaxpeer   = "pricempire-waxpeer";
+    
+    /// <summary>SteamAnalyst — Steam Market prices with manipulation detection.</summary>
+    public const string SteamAnalyst = "steamanalyst";
+
 }
