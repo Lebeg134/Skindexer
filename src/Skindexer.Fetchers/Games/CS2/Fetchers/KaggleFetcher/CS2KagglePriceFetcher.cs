@@ -18,6 +18,8 @@ public sealed class CS2KagglePriceFetcher : IFileFetcher
 {
     public string FetcherId => "cs2-kaggle-steam";
     public string DisplayName => "CS2 Kaggle Steam Prices";
+    
+    public bool IsAuthoritativeItemSource { get; } = false;
     public string[] SupportedExtensions => [".csv"];
 
     private const string GameId = GameIds.CounterStrike;

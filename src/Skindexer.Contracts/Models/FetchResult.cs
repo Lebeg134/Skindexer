@@ -4,6 +4,7 @@ public class FetchResult
 {
     public string GameId { get; init; } = default!;
     public string Source { get; init; } = default!;
+    public bool IsAuthoritativeItemSource { get; init; }
     public IReadOnlyList<SkinItem> Items { get; init; } = [];
     public IReadOnlyList<SkinVariant> Variants { get; init; } = [];
     public IReadOnlyList<SkinPrice> Prices { get; init; } = [];
@@ -15,15 +16,18 @@ public class FetchResult
     public static FetchResult Success(string gameId, string source,
         IReadOnlyList<SkinItem> items,
         IReadOnlyList<SkinVariant> variants,
-        IReadOnlyList<SkinPrice> prices) => new()
+        IReadOnlyList<SkinPrice> prices,
+        bool isAuthoritativeItemSource = false) => new()
     {
         GameId = gameId,
         Source = source,
         Items = items,
         Variants = variants,
         Prices = prices,
-        IsSuccess = true
+        IsSuccess = true,
+        IsAuthoritativeItemSource = isAuthoritativeItemSource
     };
+
 
     public static FetchResult Failure(string gameId, string source, string error) => new()
     {
@@ -37,7 +41,8 @@ public class FetchResult
         IReadOnlyList<SkinItem> items,
         IReadOnlyList<SkinVariant> variants,
         IReadOnlyList<SkinPrice> prices,
-        IReadOnlyList<string> warnings) => new()
+        IReadOnlyList<string> warnings,
+        bool isAuthoritativeItemSource = false) => new()
     {
         GameId = gameId,
         Source = source,
@@ -45,6 +50,7 @@ public class FetchResult
         Variants = variants,
         Prices = prices,
         IsSuccess = true,
-        Warnings = warnings
+        Warnings = warnings,
+        IsAuthoritativeItemSource = isAuthoritativeItemSource
     };
 }

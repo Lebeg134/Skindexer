@@ -36,6 +36,8 @@ public sealed class CS2SteamAnalystFetcher : IScheduledFetcher
 
     public string FetcherId     => "cs2-steamanalyst";
     public string DisplayName   => "CS2 SteamAnalyst Price Fetcher";
+    
+    public bool IsAuthoritativeItemSource { get; } = false;
     public TimeSpan PollingInterval => TimeSpan.FromHours(24);
 
     // -------------------------------------------------------------------------

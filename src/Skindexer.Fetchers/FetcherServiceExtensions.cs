@@ -1,8 +1,9 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Skindexer.Fetchers.Games.CS2.Fetchers;
+using Skindexer.Fetchers.Games.CS2.Fetchers.ByMykelItemFetcher;
+using Skindexer.Fetchers.Games.CS2.Fetchers.ByMykelItemFetcher.Mappers;
+using Skindexer.Fetchers.Games.CS2.Fetchers.CS2Sh;
 using Skindexer.Fetchers.Games.CS2.Fetchers.KaggleFetcher;
-using Skindexer.Fetchers.Games.CS2.Mappers;
 using Skindexer.Fetchers.Games.Rust;
 using Skindexer.Fetchers.Interfaces;
 using Skindexer.Fetchers.Options;
@@ -20,12 +21,18 @@ public static class FetcherServiceExtensions
         services.Configure<KaggleFetcherOptions>(configuration.GetSection("Kaggle"));
         services.AddSingleton<CS2KagglePriceFetcher>();
         
-        //services.AddHttpClient<CS2ByMykelItemFetcher>();
-        //services.AddSingleton<IGameFetcher, CS2ByMykelItemFetcher>();
-        //services.AddSingleton<CS2ByMykelSkinMapper>();
-        //services.AddSingleton<CS2ByMykelCollectibleMapper>();
-        //services.AddSingleton<CS2ByMykelPatchMapper>();
-        //services.AddSingleton<CS2ByMykelMusicKitMapper>();
+        services.AddHttpClient<CS2ByMykelItemFetcher>();
+        services.AddSingleton<IGameFetcher, CS2ByMykelItemFetcher>();
+        services.AddSingleton<CS2ByMykelSkinMapper>();
+        services.AddSingleton<CS2ByMykelCollectibleMapper>();
+        services.AddSingleton<CS2ByMykelPatchMapper>();
+        services.AddSingleton<CS2ByMykelMusicKitMapper>();
+        
+        //services.AddHttpClient(nameof(CS2CS2ShFetcher), client =>
+        //{
+        //    client.Timeout = TimeSpan.FromSeconds(120); // large bulk response
+        //});
+        //services.AddSingleton<IGameFetcher, CS2CS2ShFetcher>();
         
         // Rust
         services.AddHttpClient<RustFetcher>();

@@ -30,4 +30,5 @@ public interface IGameFetcher
     /// Must never throw — return FetchResult.Failure on error instead.
     /// </summary>
     Task<FetchResult> FetchAsync(CancellationToken cancellationToken = default);
+    bool IsAuthoritativeItemSource { get; } 
 }

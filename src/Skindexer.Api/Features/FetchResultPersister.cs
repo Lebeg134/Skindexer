@@ -42,20 +42,26 @@ public class FetchResultPersister : IFetchResultPersister
     // -------------------------------------------------------------------------
     // Items
     // -------------------------------------------------------------------------
-
     private async Task PersistItemsAsync(FetchResult result, CancellationToken ct)
     {
         if (result.Items.Count == 0) return;
 
-        _logger.LogInformation(
-            "Persisting {Count} items for {GameId} from {Source}",
-            result.Items.Count, result.GameId, result.Source);
+        if (result.IsAuthoritativeItemSource)
+        {
+            // ByMykel — full upsert, metadata overwrite allowed
+            await _items.UpsertItemsAsync(result.Items, ct);
+            return;
+        }
 
-        await _items.UpsertItemsAsync(result.Items, ct);
+        // Non-authoritative source (cs2.sh etc.) — only insert genuinely new items,
+        // never overwrite existing metadata
+        var existingSlugMap = await _items.GetSlugToItemIdMapAsync(result.GameId, ct);
+        var newItems = result.Items
+            .Where(i => !existingSlugMap.ContainsKey(i.Slug))
+            .ToList();
 
-        _logger.LogInformation(
-            "Upserted {Count} items for {GameId}",
-            result.Items.Count, result.GameId);
+        if (newItems.Count > 0)
+            await _items.UpsertItemsAsync(newItems, ct);
     }
 
     // -------------------------------------------------------------------------
@@ -138,17 +144,12 @@ public class FetchResultPersister : IFetchResultPersister
 
         foreach (var price in result.Prices)
         {
-            if (price.VariantId != Guid.Empty)
-            {
-                resolved.Add(price);
-                continue;
-            }
-
             if (slugMap.TryGetValue(price.Slug, out var variantId))
             {
                 resolved.Add(new SkinPrice
                 {
                     VariantId = variantId,
+                    GameId = price.GameId,
                     Slug = price.Slug,
                     Source = price.Source,
                     PriceType = price.PriceType,
