@@ -8,7 +8,7 @@ using Skindexer.Fetchers.Games.CS2.Fetchers.ByMykelItemFetcher.Mappers;
 using Skindexer.Fetchers.Games.CS2.Mappers;
 using Skindexer.Fetchers.Games.CS2.SlugHelpers;
 using Skindexer.Fetchers.Interfaces;
-using CS2ByMykelSlugHelper = Skindexer.Fetchers.Games.CS2.Fetchers.ByMykelItemFetcher.SlugHelpers.CS2ByMykelSlugHelper;
+using CS2ByMykelSlugHelper = Skindexer.Fetchers.Games.CS2.Fetchers.ByMykelItemFetcher.CS2ByMykelSlugHelper;
 
 namespace Skindexer.Fetchers.Games.CS2.Fetchers.ByMykelItemFetcher;
 

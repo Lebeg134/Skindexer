@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Skindexer.Fetchers.Games.CS2.Fetchers.PriceEmpireFetcher.DTOs;
+namespace Skindexer.Fetchers.Games.CS2.Fetchers.PriceEmpireFetcher;
 
 /// <summary>
 /// Top-level item entry returned by GET /v4/paid/items/prices

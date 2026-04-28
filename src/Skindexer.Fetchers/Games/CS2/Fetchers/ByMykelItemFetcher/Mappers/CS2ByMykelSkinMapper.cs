@@ -4,7 +4,7 @@ using Skindexer.Contracts.Models;
 using Skindexer.Contracts.Models.Metadata;
 using Skindexer.Fetchers.Games.CS2.Fetchers.ByMykelItemFetcher.DTOs;
 using Skindexer.Fetchers.Games.CS2.SlugHelpers;
-using CS2ByMykelSlugHelper = Skindexer.Fetchers.Games.CS2.Fetchers.ByMykelItemFetcher.SlugHelpers.CS2ByMykelSlugHelper;
+using CS2ByMykelSlugHelper = Skindexer.Fetchers.Games.CS2.Fetchers.ByMykelItemFetcher.CS2ByMykelSlugHelper;
 
 namespace Skindexer.Fetchers.Games.CS2.Fetchers.ByMykelItemFetcher.Mappers;
 

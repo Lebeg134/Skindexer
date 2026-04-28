@@ -1,5 +1,3 @@
-// Skindexer.Fetchers/Games/CS2/Fetchers/CS2KagglePriceFetcher.cs
-
 using System.Globalization;
 using CsvHelper;
 using CsvHelper.Configuration;
@@ -7,8 +5,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Skindexer.Contracts.Constants;
 using Skindexer.Contracts.Models;
-using Skindexer.Fetchers.Games.CS2.Fetchers.KaggleFetcher.SlugHelpers;
-using Skindexer.Fetchers.Games.CS2.SlugHelpers;
 using Skindexer.Fetchers.Interfaces;
 using Skindexer.Fetchers.Options;
 
