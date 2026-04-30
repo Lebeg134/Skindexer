@@ -1,6 +1,7 @@
 using System.Net.Http.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Skindexer.Contracts.Constants;
 using Skindexer.Contracts.Models;
@@ -15,8 +16,19 @@ namespace Skindexer.Fetchers.Games.CS2.Fetchers.SteamWebApiFetcher;
 /// </summary>
 public sealed class CS2SteamWebApiFetcher : IScheduledFetcher
 {
+    public static readonly FetcherDescriptor Descriptor = new()
+    {
+        FetcherId = "cs2-steamwebapi",
+        Register = (services, _) =>
+        {
+            services.AddHttpClient<CS2SteamWebApiFetcher>();
+            services.AddSingleton<IGameFetcher, CS2SteamWebApiFetcher>();
+        }
+    };
+    
     private const string GameId = GameIds.CounterStrike;
     private const string BaseUrl = "https://www.steamwebapi.com/steam/api/items";
+
     private const string SelectFields =
         "markethashname,pricelatest,pricelatestsell,buyorderprice,pricereal,sold24h,image,rarity";
 
@@ -24,9 +36,9 @@ public sealed class CS2SteamWebApiFetcher : IScheduledFetcher
     private readonly ILogger<CS2SteamWebApiFetcher> _logger;
     private readonly string _apiKey;
 
-    public string FetcherId => "cs2-steamwebapi";
+    public string FetcherId => Descriptor.FetcherId;
     public string DisplayName => "CS2 SteamWebApi";
-    
+
     public bool IsAuthoritativeItemSource { get; } = false;
     public TimeSpan PollingInterval => TimeSpan.FromHours(6);
 
@@ -66,14 +78,13 @@ public sealed class CS2SteamWebApiFetcher : IScheduledFetcher
         return MapResults(raw);
     }
 
-    
 
     private FetchResult MapResults(List<SteamWebApiItemDto> raw)
     {
-        var items     = new List<SkinItem>();
-        var variants  = new List<SkinVariant>();
-        var prices    = new List<SkinPrice>();
-        var warnings  = new List<string>();
+        var items = new List<SkinItem>();
+        var variants = new List<SkinVariant>();
+        var prices = new List<SkinPrice>();
+        var warnings = new List<string>();
 
         // Deduplicate items by base slug — multiple variants share the same SkinItem
         var itemsBySlug = new Dictionary<string, SkinItem>(StringComparer.Ordinal);
@@ -96,25 +107,25 @@ public sealed class CS2SteamWebApiFetcher : IScheduledFetcher
                 continue;
             }
 
-            var baseSlug    = CS2SlugBuilder.BuildBaseSlug(weapon, skinName);
+            var baseSlug = CS2SlugBuilder.BuildBaseSlug(weapon, skinName);
             var variantSlug = CS2SlugBuilder.BuildVariantSlug(weapon, skinName, wear, statTrak, souvenir);
-            var now         = DateTime.UtcNow;
+            var now = DateTime.UtcNow;
 
             // Upsert SkinItem — one per base slug
             if (!itemsBySlug.TryGetValue(baseSlug, out var item))
             {
                 item = new SkinItem
                 {
-                    Id           = Guid.NewGuid(),
-                    GameId       = GameId,
-                    ItemType     = CS2ItemTypes.WeaponSkin,
-                    Slug         = baseSlug,
-                    Name         = $"{weapon} | {skinName}",
-                    ImageUrl     = dto.Image,
-                    IsTradeable  = true,
+                    Id = Guid.NewGuid(),
+                    GameId = GameId,
+                    ItemType = CS2ItemTypes.WeaponSkin,
+                    Slug = baseSlug,
+                    Name = $"{weapon} | {skinName}",
+                    ImageUrl = dto.Image,
+                    IsTradeable = true,
                     IsMarketable = true,
-                    CreatedAt    = now,
-                    UpdatedAt    = now,
+                    CreatedAt = now,
+                    UpdatedAt = now,
                 };
 
                 itemsBySlug[baseSlug] = item;
@@ -123,16 +134,16 @@ public sealed class CS2SteamWebApiFetcher : IScheduledFetcher
 
             var variant = new SkinVariant
             {
-                Id     = Guid.NewGuid(),
+                Id = Guid.NewGuid(),
                 ItemId = item.Id,
                 GameId = GameId,
-                Slug   = variantSlug,
+                Slug = variantSlug,
                 Metadata = new Dictionary<string, object?>
                 {
-                    ["wear"]      = wear,
-                    ["stattrak"]  = statTrak,
-                    ["souvenir"]  = souvenir,
-                    ["rarity"]    = dto.Rarity,
+                    ["wear"] = wear,
+                    ["stattrak"] = statTrak,
+                    ["souvenir"] = souvenir,
+                    ["rarity"] = dto.Rarity,
                 },
             };
 
@@ -140,10 +151,12 @@ public sealed class CS2SteamWebApiFetcher : IScheduledFetcher
 
             // --- Prices ---
 
-            AddPrice(prices, variant, Sources.SteamWebApi, PriceTypes.LowestListing,  dto.PriceLatest,    volume: null, now);
-            AddPrice(prices, variant, Sources.SteamWebApi, PriceTypes.LastSold,        dto.PriceLatestSell, volume: dto.Sold24h, now);
-            AddPrice(prices, variant, Sources.SteamWebApi, PriceTypes.BuyOrder,        dto.BuyOrderPrice,  volume: null, now);
-            AddPrice(prices, variant, Sources.SteamWebApi, PriceTypes.LowestMarket,    dto.PriceReal,      volume: null, now);
+            AddPrice(prices, variant, Sources.SteamWebApi, PriceTypes.LowestListing, dto.PriceLatest, volume: null,
+                now);
+            AddPrice(prices, variant, Sources.SteamWebApi, PriceTypes.LastSold, dto.PriceLatestSell,
+                volume: dto.Sold24h, now);
+            AddPrice(prices, variant, Sources.SteamWebApi, PriceTypes.BuyOrder, dto.BuyOrderPrice, volume: null, now);
+            AddPrice(prices, variant, Sources.SteamWebApi, PriceTypes.LowestMarket, dto.PriceReal, volume: null, now);
         }
 
         _logger.LogInformation(
@@ -169,14 +182,14 @@ public sealed class CS2SteamWebApiFetcher : IScheduledFetcher
 
         prices.Add(new SkinPrice
         {
-            VariantId  = variant.Id,
-            GameId     = GameId,
-            Slug       = variant.Slug,
-            Source     = source,
-            PriceType  = priceType,
-            Price      = value.Value,
-            Currency   = "USD",
-            Volume     = volume,
+            VariantId = variant.Id,
+            GameId = GameId,
+            Slug = variant.Slug,
+            Source = source,
+            PriceType = priceType,
+            Price = value.Value,
+            Currency = "USD",
+            Volume = volume,
             RecordedAt = recordedAt,
         });
     }

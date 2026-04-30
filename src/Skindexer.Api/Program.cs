@@ -3,6 +3,7 @@ using Npgsql;
 using Scalar.AspNetCore;
 using Skindexer.Api.Data;
 using Skindexer.Api.Data.Repositories;
+using Skindexer.Api.Extensions;
 using Skindexer.Api.Features;
 using Skindexer.Api.Features.Collections;
 using Skindexer.Api.Features.Enrichment;

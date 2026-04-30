@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Skindexer.Contracts.Models;
 using Skindexer.Fetchers.Interfaces;
@@ -6,12 +7,22 @@ namespace Skindexer.Fetchers.Games.Rust;
 
 public class RustFetcher : IScheduledFetcher
 {
+    public static readonly FetcherDescriptor Descriptor = new()
+    {
+        FetcherId = "rust",
+        Register = (services, _) =>
+        {
+            services.AddHttpClient<RustFetcher>();
+            services.AddSingleton<IGameFetcher, RustFetcher>();
+        }
+    };
+    
     private readonly HttpClient _http;
     private readonly ILogger<RustFetcher> _logger;
 
-    public string FetcherId => "rust";
+    public string FetcherId => Descriptor.FetcherId;
     public string DisplayName => "Rust";
-    
+
     public bool IsAuthoritativeItemSource { get; } = false;
     public TimeSpan PollingInterval => TimeSpan.FromMinutes(15);
 

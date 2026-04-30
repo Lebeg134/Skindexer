@@ -1,6 +1,7 @@
 using System.IO.Compression;
 using System.Text.Json;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Skindexer.Contracts.Constants;
 using Skindexer.Contracts.Models;
@@ -15,6 +16,18 @@ namespace Skindexer.Fetchers.Games.CS2.Fetchers.CS2Sh;
 /// </summary>
 public sealed class CS2CS2ShFetcher : IScheduledFetcher
 {
+    public static readonly FetcherDescriptor Descriptor = new()
+    {
+        FetcherId = "cs2-cs2sh",
+        Register = (services, _) =>
+        {
+            services.AddHttpClient(nameof(CS2CS2ShFetcher), client =>
+            {
+                client.Timeout = TimeSpan.FromSeconds(120);
+            });
+            services.AddSingleton<IGameFetcher, CS2CS2ShFetcher>();
+        }
+    };
     private const string GameId  = GameIds.CounterStrike;
     private const string BaseUrl = "https://api.cs2.sh/v1/prices/latest";
 
@@ -22,7 +35,7 @@ public sealed class CS2CS2ShFetcher : IScheduledFetcher
     private readonly ILogger<CS2CS2ShFetcher> _logger;
     private readonly string _apiKey;
 
-    public string FetcherId      => "cs2-cs2sh";
+    public string FetcherId      => Descriptor.FetcherId;
     public string DisplayName    => "CS2 cs2.sh";
     
     public bool IsAuthoritativeItemSource { get; } = false;

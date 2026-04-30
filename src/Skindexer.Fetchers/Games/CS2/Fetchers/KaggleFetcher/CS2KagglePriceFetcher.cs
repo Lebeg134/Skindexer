@@ -1,6 +1,7 @@
 using System.Globalization;
 using CsvHelper;
 using CsvHelper.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Skindexer.Contracts.Constants;
@@ -16,7 +17,18 @@ namespace Skindexer.Fetchers.Games.CS2.Fetchers.KaggleFetcher;
 /// </summary>
 public sealed class CS2KagglePriceFetcher : IFileFetcher
 {
-    public string FetcherId => "cs2-kaggle-steam";
+    public static readonly FetcherDescriptor Descriptor = new()
+    {
+        FetcherId = "cs2-kaggle-steam",
+        Register = (services, configuration) =>
+        {
+            services.Configure<KaggleFetcherOptions>(configuration.GetSection("Kaggle"));
+            // TODO: register as IGameFetcher once extraction is decided — see FetcherServiceExtensions
+            services.AddSingleton<CS2KagglePriceFetcher>();
+        }
+    };
+    
+    public string FetcherId     => Descriptor.FetcherId;
     public string DisplayName => "CS2 Kaggle Steam Prices";
     
     public bool IsAuthoritativeItemSource { get; } = false;

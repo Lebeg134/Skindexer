@@ -2,6 +2,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Skindexer.Contracts.Constants;
 using Skindexer.Contracts.Models;
@@ -33,8 +34,18 @@ public sealed class CS2SteamAnalystFetcher : IScheduledFetcher
     // -------------------------------------------------------------------------
     // IGameFetcher / IScheduledFetcher
     // -------------------------------------------------------------------------
+    
+    public static readonly FetcherDescriptor Descriptor = new()
+    {
+        FetcherId = "cs2-steamanalyst",
+        Register = (services, _) =>
+        {
+            services.AddHttpClient<CS2SteamAnalystFetcher>();
+            services.AddSingleton<IGameFetcher, CS2SteamAnalystFetcher>();
+        }
+    };
 
-    public string FetcherId     => "cs2-steamanalyst";
+    public string FetcherId     => Descriptor.FetcherId;
     public string DisplayName   => "CS2 SteamAnalyst Price Fetcher";
     
     public bool IsAuthoritativeItemSource { get; } = false;

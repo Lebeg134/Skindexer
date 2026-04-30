@@ -1,14 +1,12 @@
 using System.Net.Http.Json;
 using System.Text.Json;
+using Microsoft.Extensions.DependencyInjection;
 using Skindexer.Contracts.Constants;
 using Skindexer.Contracts.Models;
 using Skindexer.Contracts.Models.Metadata;
 using Skindexer.Fetchers.Games.CS2.Fetchers.ByMykelItemFetcher.DTOs;
 using Skindexer.Fetchers.Games.CS2.Fetchers.ByMykelItemFetcher.Mappers;
-using Skindexer.Fetchers.Games.CS2.Mappers;
-using Skindexer.Fetchers.Games.CS2.SlugHelpers;
 using Skindexer.Fetchers.Interfaces;
-using CS2ByMykelSlugHelper = Skindexer.Fetchers.Games.CS2.Fetchers.ByMykelItemFetcher.CS2ByMykelSlugHelper;
 
 namespace Skindexer.Fetchers.Games.CS2.Fetchers.ByMykelItemFetcher;
 
@@ -18,6 +16,20 @@ namespace Skindexer.Fetchers.Games.CS2.Fetchers.ByMykelItemFetcher;
 /// </summary>
 public class CS2ByMykelItemFetcher : IScheduledFetcher
 {
+    public static readonly FetcherDescriptor Descriptor = new()
+    {
+        FetcherId = "cs2-bymykel",
+        Register = (services, _) =>
+        {
+            services.AddHttpClient<CS2ByMykelItemFetcher>();
+            services.AddSingleton<IGameFetcher, CS2ByMykelItemFetcher>();
+            services.AddSingleton<CS2ByMykelSkinMapper>();
+            services.AddSingleton<CS2ByMykelCollectibleMapper>();
+            services.AddSingleton<CS2ByMykelPatchMapper>();
+            services.AddSingleton<CS2ByMykelMusicKitMapper>();
+        }
+    };
+    
     private const string GameId = GameIds.CounterStrike;
     private const string Source = "bymykel";
     private const string BaseUrl = "https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en";
@@ -44,7 +56,7 @@ public class CS2ByMykelItemFetcher : IScheduledFetcher
         _musicKitMapper = musicKitMapper;
     }
 
-    public string FetcherId => "cs2-bymykel";
+    public string FetcherId => Descriptor.FetcherId;
     public string DisplayName => "CSGO-API (ByMykel)";
     
     public bool IsAuthoritativeItemSource { get; } = true;
