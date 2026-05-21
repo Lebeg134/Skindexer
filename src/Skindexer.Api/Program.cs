@@ -10,6 +10,7 @@ using Skindexer.Api.Features.Enrichment;
 using Skindexer.Api.Features.Import;
 using Skindexer.Api.Features.Items;
 using Skindexer.Api.Features.Prices;
+using Skindexer.Api.Features.PriceSources;
 using Skindexer.Api.Features.Rarity;
 using Skindexer.Api.Features.Variants;
 using Skindexer.Fetchers;
@@ -39,6 +40,7 @@ services.AddDbContext<SkindexerDbContext>(options =>
 
 services.AddScoped<IItemRepository, ItemRepository>();
 services.AddScoped<IPriceRepository, PriceRepository>();
+services.AddScoped<IPriceSourceRepository, PriceSourceRepository>();
 services.AddScoped<ICollectionRepository, CollectionRepository>();
 services.AddScoped<IRarityRepository, RarityRepository>();
 services.AddScoped<IRarityGroupRepository, RarityGroupRepository>();
@@ -60,6 +62,7 @@ app.UseHttpsRedirection();
 EnrichEndpoints.MapEndpoint(app);
 GetItemsEndpoint.MapEndpoint(app);
 GetPricesEndpoint.MapEndpoint(app);
+GetPriceSourcesEndpoint.MapEndpoint(app);
 GetCollectionsEndpoint.MapEndpoint(app);
 GetRaritiesEndpoint.MapEndpoint(app);
 GetRarityGroupsEndpoint.MapEndpoint(app);

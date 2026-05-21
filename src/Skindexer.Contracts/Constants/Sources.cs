@@ -39,4 +39,36 @@ public static class Sources
     /// <summary>SteamAnalyst — Steam Market prices with manipulation detection.</summary>
     public const string SteamAnalyst = "steamanalyst";
 
+    
+    // -------------------------------------------------------------------------
+    // Display names — null until explicitly filled in.
+    // When ready: return a string instead of null for that source.
+    // -------------------------------------------------------------------------
+    public static string? GetDisplayName(string sourceId) => sourceId switch
+    {
+        KaggleSteam         => null,
+        
+        SteamWebApi         => null,
+        
+        Pricempire          => null,
+        
+        PricempireBuff163   => null,
+        PricempireSteam     => null,
+        PricempireDMarket   => null,
+        PricempireSkinport  => null,
+        PricempireSkinbaron => null,
+        PricempireCSFloat   => null,
+        PricempireWaxpeer   => null,
+        
+        CS2Sh               => null,
+        CS2ShBuff           => null,
+        CS2ShYoupin         => null,
+        CS2ShCsFloat        => null,
+        CS2ShSteam          => null,
+        CS2ShSkinport       => null,
+        CS2ShC5Game         => null,
+        
+        SteamAnalyst        => null,
+        _                   => null
+    };
 }
