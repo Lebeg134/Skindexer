@@ -4,6 +4,7 @@ using Skindexer.Fetchers.Games.CS2.Fetchers.ByMykelItemFetcher;
 using Skindexer.Fetchers.Games.CS2.Fetchers.CS2Sh;
 using Skindexer.Fetchers.Games.CS2.Fetchers.KaggleFetcher;
 using Skindexer.Fetchers.Games.CS2.Fetchers.PriceEmpireFetcher;
+using Skindexer.Fetchers.Games.CS2.Fetchers.SkinportFetcher;
 using Skindexer.Fetchers.Games.CS2.Fetchers.SteamAnalyst;
 using Skindexer.Fetchers.Games.CS2.Fetchers.SteamWebApiFetcher;
 using Skindexer.Fetchers.Games.Rust;
@@ -20,6 +21,7 @@ public static class FetcherServiceExtensions
         CS2SteamAnalystFetcher.Descriptor,
         CS2SteamWebApiFetcher.Descriptor,
         CS2KagglePriceFetcher.Descriptor,
+        CS2SkinportFetcher.Descriptor,
         RustFetcher.Descriptor,
     ];
 

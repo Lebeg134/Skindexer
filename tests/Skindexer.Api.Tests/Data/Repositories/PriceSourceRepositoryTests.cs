@@ -1,3 +1,5 @@
+using System;
+using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Skindexer.Api.Data;
 using Skindexer.Api.Data.Entities;
@@ -5,6 +7,7 @@ using Skindexer.Api.Features.PriceSources;
 using Skindexer.Api.Tests.Data.Repositories.Fixtures;
 using Skindexer.Contracts.Constants;
 using Skindexer.Contracts.Models;
+using Xunit;
 
 namespace Skindexer.Api.Tests.Data.Repositories;
 

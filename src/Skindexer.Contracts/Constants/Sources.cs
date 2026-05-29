@@ -27,14 +27,17 @@ public static class Sources
     /// <summary>cs2.sh — top-level source label used on FetchResult.</summary>
     public const string CS2Sh = "cs2sh";
 
-// Per-marketplace sources from cs2.sh.
-// Format: "cs2sh-{marketplace}" to avoid collisions with other fetchers.
+    // Per-marketplace sources from cs2.sh.
+    // Format: "cs2sh-{marketplace}" to avoid collisions with other fetchers.
     public const string CS2ShBuff     = "cs2sh-buff";
     public const string CS2ShYoupin   = "cs2sh-youpin";
     public const string CS2ShCsFloat  = "cs2sh-csfloat";
     public const string CS2ShSteam    = "cs2sh-steam";
     public const string CS2ShSkinport = "cs2sh-skinport";
     public const string CS2ShC5Game   = "cs2sh-c5game";
+    
+    /// <summary>Skinport — direct market price feed.</summary>
+    public const string Skinport = "skinport";
     
     /// <summary>SteamAnalyst — Steam Market prices with manipulation detection.</summary>
     public const string SteamAnalyst = "steamanalyst";
@@ -67,6 +70,8 @@ public static class Sources
         CS2ShSteam          => null,
         CS2ShSkinport       => null,
         CS2ShC5Game         => null,
+        
+        Skinport => null,
         
         SteamAnalyst        => null,
         _                   => null
