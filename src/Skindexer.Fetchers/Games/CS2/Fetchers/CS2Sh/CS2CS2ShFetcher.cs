@@ -28,19 +28,18 @@ public sealed class CS2CS2ShFetcher : IScheduledFetcher
             services.AddSingleton<IGameFetcher, CS2CS2ShFetcher>();
         }
     };
+
+    public string FetcherId      => Descriptor.FetcherId;
+    public string DisplayName    => "CS2 cs2.sh";
+    public bool IsAuthoritativeItemSource { get; } = false;
     private const string GameId  = GameIds.CounterStrike;
     private const string BaseUrl = "https://api.cs2.sh/v1/prices/latest";
+    public string DefaultCronExpression => "0 1 * * *"; // 1:00 AM daily
 
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<CS2CS2ShFetcher> _logger;
     private readonly string _apiKey;
-
-    public string FetcherId      => Descriptor.FetcherId;
-    public string DisplayName    => "CS2 cs2.sh";
     
-    public bool IsAuthoritativeItemSource { get; } = false;
-    public TimeSpan PollingInterval => TimeSpan.FromHours(1);
-
     public CS2CS2ShFetcher(
         IHttpClientFactory httpClientFactory,
         IConfiguration configuration,

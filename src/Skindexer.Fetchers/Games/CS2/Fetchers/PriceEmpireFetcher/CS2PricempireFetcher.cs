@@ -47,13 +47,8 @@ public sealed class CS2PricempireFetcher : IScheduledFetcher
 
     public string FetcherId    => Descriptor.FetcherId;
     public string DisplayName  => "CS2 Pricempire Price Fetcher";
-    
     public bool IsAuthoritativeItemSource { get; } = false;
-    public TimeSpan PollingInterval => TimeSpan.FromHours(24);
-
-    // -------------------------------------------------------------------------
-    // Constants
-    // -------------------------------------------------------------------------
+    public string DefaultCronExpression => "0 1 * * *"; // 1:00 AM daily
 
     private const string BaseUrl  = "https://api.pricempire.com";
     private const int    AppId    = 730;

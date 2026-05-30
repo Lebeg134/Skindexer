@@ -25,6 +25,8 @@ services.AddOpenApi();
 services.AddSkindexerFetchers(configuration);
 services.AddHostedService<FetchScheduler>();
 
+services.Configure<SchedulerOptions>(configuration.GetSection(SchedulerOptions.SectionName));
+
 
 var connectionString = builder.Configuration.GetConnectionString("Default")!;
 
@@ -84,7 +86,5 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<SkindexerDbContext>();
     await db.Database.MigrateAsync();
 }
-
-app.Run();
 
 app.Run();

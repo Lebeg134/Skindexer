@@ -47,9 +47,9 @@ public sealed class CS2SteamAnalystFetcher : IScheduledFetcher
 
     public string FetcherId     => Descriptor.FetcherId;
     public string DisplayName   => "CS2 SteamAnalyst Price Fetcher";
+    public string DefaultCronExpression => "0 1 * * *"; // 1:00 AM daily
     
     public bool IsAuthoritativeItemSource { get; } = false;
-    public TimeSpan PollingInterval => TimeSpan.FromHours(24);
 
     // -------------------------------------------------------------------------
     // Constants

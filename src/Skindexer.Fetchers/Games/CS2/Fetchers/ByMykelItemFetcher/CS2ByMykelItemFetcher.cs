@@ -30,15 +30,20 @@ public class CS2ByMykelItemFetcher : IScheduledFetcher
         }
     };
     
+    public string FetcherId => Descriptor.FetcherId;
+    public string DisplayName => "CSGO-API (ByMykel)";
     private const string GameId = GameIds.CounterStrike;
-    private const string Source = "bymykel";
     private const string BaseUrl = "https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en";
-
+    public string DefaultCronExpression => "0 1 * * *"; // 1:00 AM daily
+    
+    private const string Source = "bymykel";
+    
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNameCaseInsensitive = true,
     };
 
+    
     private readonly HttpClient _http;
     private readonly CS2ByMykelSkinMapper _skinMapper;
     private readonly CS2ByMykelCollectibleMapper _collectibleMapper;
@@ -55,14 +60,8 @@ public class CS2ByMykelItemFetcher : IScheduledFetcher
         _patchMapper = patchMapper;
         _musicKitMapper = musicKitMapper;
     }
-
-    public string FetcherId => Descriptor.FetcherId;
-    public string DisplayName => "CSGO-API (ByMykel)";
     
     public bool IsAuthoritativeItemSource { get; } = true;
-
-    // TODO: make PollingInterval configurable via appsettings.json (CS2ByMykelItemFetcherOptions)
-    public TimeSpan PollingInterval => TimeSpan.FromDays(1);
 
     public async Task<FetchResult> FetchAsync(CancellationToken ct = default)
     {

@@ -28,7 +28,8 @@ public sealed class CS2SteamWebApiFetcher : IScheduledFetcher
     
     private const string GameId = GameIds.CounterStrike;
     private const string BaseUrl = "https://www.steamwebapi.com/steam/api/items";
-
+    public string DefaultCronExpression => "0 1 * * *"; // 1:00 AM daily
+    
     private const string SelectFields =
         "markethashname,pricelatest,pricelatestsell,buyorderprice,pricereal,sold24h,image,rarity";
 
@@ -40,7 +41,6 @@ public sealed class CS2SteamWebApiFetcher : IScheduledFetcher
     public string DisplayName => "CS2 SteamWebApi";
 
     public bool IsAuthoritativeItemSource { get; } = false;
-    public TimeSpan PollingInterval => TimeSpan.FromHours(6);
 
     public CS2SteamWebApiFetcher(
         IHttpClientFactory httpClientFactory,

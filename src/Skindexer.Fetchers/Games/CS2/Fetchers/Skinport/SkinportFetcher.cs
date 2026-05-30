@@ -50,7 +50,7 @@ public sealed class CS2SkinportFetcher : IScheduledFetcher
     public string DisplayName => "CS2 Skinport Price Fetcher";
 
     public bool     IsAuthoritativeItemSource { get; } = false;
-    public TimeSpan PollingInterval           => TimeSpan.FromHours(24);
+    public string DefaultCronExpression => "0 2 * * *"; // 2:00 AM daily
 
     // -------------------------------------------------------------------------
     // Constants

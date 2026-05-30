@@ -1,8 +1,8 @@
 namespace Skindexer.Fetchers.Interfaces;
- 
+
 /// <summary>
 /// Implement this for sources that should be polled automatically on a timer.
-/// The scheduler calls FetchAsync based on PollingInterval.
+/// The scheduler calls FetchAsync based on DefaultCronExpression.
 ///
 /// Use this when:
 /// - The source has a public API you can query programmatically
@@ -13,9 +13,10 @@ namespace Skindexer.Fetchers.Interfaces;
 public interface IScheduledFetcher : IGameFetcher
 {
     /// <summary>
-    /// How often this fetcher should be polled.
+    /// Default cron expression defining when this fetcher runs.
+    /// Uses standard 5-field cron syntax (minute hour day month weekday).
     /// Be respectful of upstream API rate limits.
-    /// The scheduler uses this to determine when FetchAsync is next due.
+    /// Can be overridden per-fetcher via Fetchers__Schedules__{FetcherId} config.
     /// </summary>
-    TimeSpan PollingInterval { get; }
+    string DefaultCronExpression { get; }
 }
