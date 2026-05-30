@@ -1,7 +1,9 @@
+using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using Skindexer.Api.Data;
 using Testcontainers.PostgreSql;
+using Xunit;
 
 namespace Skindexer.Api.Tests.Data.Repositories.Fixtures;
 

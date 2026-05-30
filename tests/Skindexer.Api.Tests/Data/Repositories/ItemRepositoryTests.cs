@@ -1,13 +1,16 @@
+using System;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
-using Npgsql;
 using Skindexer.Api.Data;
 using Skindexer.Api.Data.Repositories;
-using Skindexer.Api.Features.Items;
 using Skindexer.Api.Tests.Data.Repositories.Fixtures;
 using Skindexer.Contracts.Constants;
 using Skindexer.Contracts.Models;
-using Testcontainers.PostgreSql;
+using Xunit;
 
 namespace Skindexer.Api.Tests.Data.Repositories;
 

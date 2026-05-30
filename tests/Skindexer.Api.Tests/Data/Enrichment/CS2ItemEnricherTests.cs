@@ -1,8 +1,12 @@
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Skindexer.Api.Data;
 using Skindexer.Api.Data.Entities;
 using Skindexer.Api.Features.Enrichment;
 using Skindexer.Api.Tests.Data.Repositories.Fixtures;
+using Xunit;
 
 namespace Skindexer.Api.Tests.Data.Enrichment;
 
