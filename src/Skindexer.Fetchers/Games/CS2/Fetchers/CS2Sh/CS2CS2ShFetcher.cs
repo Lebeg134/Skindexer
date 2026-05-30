@@ -11,7 +11,6 @@ using Skindexer.Fetchers.Interfaces;
 namespace Skindexer.Fetchers.Games.CS2.Fetchers.CS2Sh;
 
 /// <summary>
-/// Yeah, funky name I know, but must keep them consistent!
 /// You can find out more about the API on: https://cs2.sh/
 /// </summary>
 public sealed class CS2CS2ShFetcher : IScheduledFetcher
@@ -28,18 +27,13 @@ public sealed class CS2CS2ShFetcher : IScheduledFetcher
             services.AddSingleton<IGameFetcher, CS2CS2ShFetcher>();
         }
     };
-    private const string GameId  = GameIds.CounterStrike;
+
+    private const string GameId = GameIds.CounterStrike;
     private const string BaseUrl = "https://api.cs2.sh/v1/prices/latest";
 
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<CS2CS2ShFetcher> _logger;
     private readonly string _apiKey;
-
-    public string FetcherId      => Descriptor.FetcherId;
-    public string DisplayName    => "CS2 cs2.sh";
-    
-    public bool IsAuthoritativeItemSource { get; } = false;
-    public TimeSpan PollingInterval => TimeSpan.FromHours(1);
 
     public CS2CS2ShFetcher(
         IHttpClientFactory httpClientFactory,
@@ -47,10 +41,17 @@ public sealed class CS2CS2ShFetcher : IScheduledFetcher
         ILogger<CS2CS2ShFetcher> logger)
     {
         _httpClientFactory = httpClientFactory;
-        _logger            = logger;
-        _apiKey            = configuration["CS2Sh:ApiKey"]
-                             ?? throw new InvalidOperationException("CS2Sh:ApiKey is not configured.");
+        _logger = logger;
+        _apiKey = configuration["CS2Sh:ApiKey"]
+                  ?? throw new InvalidOperationException("CS2Sh:ApiKey is not configured.");
     }
+
+    public string FetcherId => Descriptor.FetcherId;
+    public string DisplayName => "CS2 cs2.sh";
+    public string DefaultCronExpression => "0 1 * * *"; // 1:00 AM daily
+    public bool IsAuthoritativeItemSource => false;
+
+    // --- Core Execution ---
 
     public async Task<FetchResult> FetchAsync(CancellationToken cancellationToken = default)
     {
@@ -58,7 +59,7 @@ public sealed class CS2CS2ShFetcher : IScheduledFetcher
 
         try
         {
-            var client  = _httpClientFactory.CreateClient(nameof(CS2CS2ShFetcher));
+            var client = _httpClientFactory.CreateClient(nameof(CS2CS2ShFetcher));
             var request = new HttpRequestMessage(HttpMethod.Get, BaseUrl);
             request.Headers.Add("Authorization", $"Bearer {_apiKey}");
             request.Headers.Add("Accept-Encoding", "gzip");
@@ -66,15 +67,13 @@ public sealed class CS2CS2ShFetcher : IScheduledFetcher
             var httpResponse = await client.SendAsync(request, cancellationToken);
             httpResponse.EnsureSuccessStatusCode();
 
-            // cs2.sh always returns gzip — decompress manually since we're
-            // using SendAsync directly rather than GetFromJsonAsync
-            await using var compressed   = await httpResponse.Content.ReadAsStreamAsync(cancellationToken);
+            await using var compressed = await httpResponse.Content.ReadAsStreamAsync(cancellationToken);
             await using var decompressed = new GZipStream(compressed, CompressionMode.Decompress);
 
             response = await JsonSerializer.DeserializeAsync<CS2ShResponse>(
                            decompressed,
                            cancellationToken: cancellationToken)
-                       ?? new CS2ShResponse();
+                       ?? new();
         }
         catch (Exception ex)
         {
@@ -85,15 +84,17 @@ public sealed class CS2CS2ShFetcher : IScheduledFetcher
         return MapResults(response);
     }
 
+    // --- Parsing & Mapping Subroutines ---
+
     private FetchResult MapResults(CS2ShResponse response)
     {
-        var items    = new List<SkinItem>();
+        var items = new List<SkinItem>();
         var variants = new List<SkinVariant>();
-        var prices   = new List<SkinPrice>();
+        var prices = new List<SkinPrice>();
         var warnings = new List<string>();
 
         var itemsBySlug = new Dictionary<string, SkinItem>(StringComparer.Ordinal);
-        var now         = DateTime.UtcNow;
+        var now = DateTime.UtcNow;
 
         foreach (var (marketHashName, itemData) in response.Items)
         {
@@ -106,22 +107,20 @@ public sealed class CS2CS2ShFetcher : IScheduledFetcher
                     out var souvenir))
                 continue;
 
-            var baseSlug    = CS2SlugBuilder.BuildBaseSlug(weapon, skinName);
+            var baseSlug = CS2SlugBuilder.BuildBaseSlug(weapon, skinName);
             var variantSlug = CS2SlugBuilder.BuildVariantSlug(weapon, skinName, wear, statTrak, souvenir);
 
             var item = GetOrCreateItem(itemsBySlug, items, baseSlug, weapon, skinName, now);
 
-            // Base variant (no phase)
             var variant = CreateVariant(item, GameId, variantSlug, wear, statTrak, souvenir, phase: null);
             variants.Add(variant);
             AddMarketplacePrices(prices, variant, itemData, now);
 
-            // Doppler / Case Hardened phase variants
             if (itemData.Variants is not null)
             {
                 foreach (var (_, phaseData) in itemData.Variants)
                 {
-                    var phaseSlug    = $"{variantSlug}-{phaseData.Version}";
+                    var phaseSlug = $"{variantSlug}-{phaseData.Version}";
                     var phaseVariant = CreateVariant(item, GameId, phaseSlug, wear, statTrak, souvenir, phaseData.DisplayName);
                     variants.Add(phaseVariant);
                     AddMarketplacePrices(prices, phaseVariant, phaseData, now);
@@ -138,8 +137,6 @@ public sealed class CS2CS2ShFetcher : IScheduledFetcher
             : FetchResult.Success(GameId, Sources.CS2Sh, items, variants, prices);
     }
 
-    // --- Helpers ---
-
     private static SkinItem GetOrCreateItem(
         Dictionary<string, SkinItem> itemsBySlug,
         List<SkinItem> items,
@@ -153,15 +150,15 @@ public sealed class CS2CS2ShFetcher : IScheduledFetcher
 
         var item = new SkinItem
         {
-            Id           = Guid.NewGuid(),
-            GameId       = GameId,
-            ItemType     = CS2ItemTypes.WeaponSkin,
-            Slug         = baseSlug,
-            Name         = $"{weapon} | {skinName}",
-            IsTradeable  = true,
+            Id = Guid.NewGuid(),
+            GameId = GameId,
+            ItemType = CS2ItemTypes.WeaponSkin,
+            Slug = baseSlug,
+            Name = $"{weapon} | {skinName}",
+            IsTradeable = true,
             IsMarketable = true,
-            CreatedAt    = now,
-            UpdatedAt    = now,
+            CreatedAt = now,
+            UpdatedAt = now,
         };
 
         itemsBySlug[baseSlug] = item;
@@ -180,9 +177,9 @@ public sealed class CS2CS2ShFetcher : IScheduledFetcher
     {
         var metadata = new Dictionary<string, object?>
         {
-            ["wear"]      = wear,
-            ["stattrak"]  = statTrak,
-            ["souvenir"]  = souvenir,
+            ["wear"] = wear,
+            ["stattrak"] = statTrak,
+            ["souvenir"] = souvenir,
         };
 
         if (phase is not null)
@@ -190,10 +187,10 @@ public sealed class CS2CS2ShFetcher : IScheduledFetcher
 
         return new SkinVariant
         {
-            Id       = Guid.NewGuid(),
-            ItemId   = item.Id,
-            GameId   = gameId,
-            Slug     = variantSlug,
+            Id = Guid.NewGuid(),
+            ItemId = item.Id,
+            GameId = gameId,
+            Slug = variantSlug,
             Metadata = metadata,
         };
     }
@@ -204,12 +201,12 @@ public sealed class CS2CS2ShFetcher : IScheduledFetcher
         CS2ShItemData data,
         DateTime now)
     {
-        AddSourcePrices(prices, variant, Sources.CS2ShBuff,     data.Buff,     now);
-        AddSourcePrices(prices, variant, Sources.CS2ShYoupin,   data.Youpin,   now);
-        AddSourcePrices(prices, variant, Sources.CS2ShCsFloat,  data.CsFloat,  now);
-        AddSourcePrices(prices, variant, Sources.CS2ShSteam,    data.Steam,    now);
+        AddSourcePrices(prices, variant, Sources.CS2ShBuff, data.Buff, now);
+        AddSourcePrices(prices, variant, Sources.CS2ShYoupin, data.Youpin, now);
+        AddSourcePrices(prices, variant, Sources.CS2ShCsFloat, data.CsFloat, now);
+        AddSourcePrices(prices, variant, Sources.CS2ShSteam, data.Steam, now);
         AddSourcePrices(prices, variant, Sources.CS2ShSkinport, data.Skinport, now);
-        AddSourcePrices(prices, variant, Sources.CS2ShC5Game,   data.C5Game,   now);
+        AddSourcePrices(prices, variant, Sources.CS2ShC5Game, data.C5Game, now);
     }
 
     private static void AddSourcePrices(
@@ -222,8 +219,8 @@ public sealed class CS2CS2ShFetcher : IScheduledFetcher
         if (market is null)
             return;
 
-        AddPrice(prices, variant, source, PriceTypes.LowestListing, market.Ask,    market.AskVolume, now);
-        AddPrice(prices, variant, source, PriceTypes.BuyOrder,       market.Bid,    market.BidVolume, now);
+        AddPrice(prices, variant, source, PriceTypes.LowestListing, market.Ask, market.AskVolume, now);
+        AddPrice(prices, variant, source, PriceTypes.BuyOrder, market.Bid, market.BidVolume, now);
     }
 
     private static void AddPrice(
@@ -240,14 +237,14 @@ public sealed class CS2CS2ShFetcher : IScheduledFetcher
 
         prices.Add(new SkinPrice
         {
-            VariantId  = variant.Id,
-            GameId     = GameId,
-            Slug       = variant.Slug,
-            Source     = source,
-            PriceType  = priceType,
-            Price      = value.Value,
-            Currency   = "USD",
-            Volume     = volume,
+            VariantId = variant.Id,
+            GameId = GameId,
+            Slug = variant.Slug,
+            Source = source,
+            PriceType = priceType,
+            Price = value.Value,
+            Currency = "USD",
+            Volume = volume,
             RecordedAt = recordedAt,
         });
     }

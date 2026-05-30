@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
   publish:
@@ -11,7 +14,6 @@ jobs:
     permissions:
       contents: read
       packages: write
-
     steps:
       - uses: actions/checkout@v4
 
@@ -27,5 +29,5 @@ jobs:
         with:
           context: .
           file: src/Skindexer.Api/Dockerfile
-          push: true
+          push: ${{ github.event_name == 'push' }}
           tags: ghcr.io/lebeg134/skindexer:latest

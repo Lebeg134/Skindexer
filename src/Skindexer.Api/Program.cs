@@ -7,6 +7,7 @@ using Skindexer.Api.Extensions;
 using Skindexer.Api.Features;
 using Skindexer.Api.Features.Collections;
 using Skindexer.Api.Features.Enrichment;
+using Skindexer.Api.Features.FetchRuns;
 using Skindexer.Api.Features.Import;
 using Skindexer.Api.Features.Items;
 using Skindexer.Api.Features.Prices;
@@ -24,6 +25,8 @@ var configuration = builder.Configuration;
 services.AddOpenApi();
 services.AddSkindexerFetchers(configuration);
 services.AddHostedService<FetchScheduler>();
+
+services.Configure<SchedulerOptions>(configuration.GetSection(SchedulerOptions.SectionName));
 
 
 var connectionString = builder.Configuration.GetConnectionString("Default")!;
@@ -45,6 +48,7 @@ services.AddScoped<ICollectionRepository, CollectionRepository>();
 services.AddScoped<IRarityRepository, RarityRepository>();
 services.AddScoped<IRarityGroupRepository, RarityGroupRepository>();
 services.AddScoped<IVariantRepository, VariantRepository>();
+services.AddScoped<IFetchRunRepository, FetchRunRepository>();
 
 services.AddScoped<IFetchResultPersister, FetchResultPersister>();
 services.AddScoped<IItemEnricher, CS2ItemEnricher>();
@@ -78,5 +82,11 @@ logger.LogInformation(
     string.Join(", ", registry.Scheduled.Select(f => f.FetcherId)),
     string.Join(", ", registry.Manual.Select(f => f.FetcherId)),
     string.Join(", ", registry.FileBased.Select(f => f.FetcherId)));
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<SkindexerDbContext>();
+    await db.Database.MigrateAsync();
+}
 
 app.Run();

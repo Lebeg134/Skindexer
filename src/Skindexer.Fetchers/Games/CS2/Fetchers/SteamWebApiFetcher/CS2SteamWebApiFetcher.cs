@@ -25,22 +25,14 @@ public sealed class CS2SteamWebApiFetcher : IScheduledFetcher
             services.AddSingleton<IGameFetcher, CS2SteamWebApiFetcher>();
         }
     };
-    
+
     private const string GameId = GameIds.CounterStrike;
     private const string BaseUrl = "https://www.steamwebapi.com/steam/api/items";
-
-    private const string SelectFields =
-        "markethashname,pricelatest,pricelatestsell,buyorderprice,pricereal,sold24h,image,rarity";
+    private const string SelectFields = "markethashname,pricelatest,pricelatestsell,buyorderprice,pricereal,sold24h,image,rarity";
 
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<CS2SteamWebApiFetcher> _logger;
     private readonly string _apiKey;
-
-    public string FetcherId => Descriptor.FetcherId;
-    public string DisplayName => "CS2 SteamWebApi";
-
-    public bool IsAuthoritativeItemSource { get; } = false;
-    public TimeSpan PollingInterval => TimeSpan.FromHours(6);
 
     public CS2SteamWebApiFetcher(
         IHttpClientFactory httpClientFactory,
@@ -52,6 +44,13 @@ public sealed class CS2SteamWebApiFetcher : IScheduledFetcher
         _apiKey = configuration["SteamWebApi:ApiKey"]
                   ?? throw new InvalidOperationException("SteamWebApi:ApiKey is not configured.");
     }
+
+    public string FetcherId => Descriptor.FetcherId;
+    public string DisplayName => "CS2 SteamWebApi";
+    public string DefaultCronExpression => "0 1 * * *"; // 1:00 AM daily
+    public bool IsAuthoritativeItemSource => false;
+
+    // --- Core Execution ---
 
     public async Task<FetchResult> FetchAsync(CancellationToken cancellationToken = default)
     {
@@ -65,8 +64,7 @@ public sealed class CS2SteamWebApiFetcher : IScheduledFetcher
             var response = await client.GetAsync(url, cancellationToken);
             response.EnsureSuccessStatusCode();
 
-            raw = await response.Content.ReadFromJsonAsync<List<SteamWebApiItemDto>>(
-                      cancellationToken: cancellationToken)
+            raw = await response.Content.ReadFromJsonAsync<List<SteamWebApiItemDto>>(cancellationToken: cancellationToken)
                   ?? [];
         }
         catch (Exception ex)
@@ -78,6 +76,7 @@ public sealed class CS2SteamWebApiFetcher : IScheduledFetcher
         return MapResults(raw);
     }
 
+    // --- Parsing & Structural Construction Subroutines ---
 
     private FetchResult MapResults(List<SteamWebApiItemDto> raw)
     {
@@ -86,7 +85,6 @@ public sealed class CS2SteamWebApiFetcher : IScheduledFetcher
         var prices = new List<SkinPrice>();
         var warnings = new List<string>();
 
-        // Deduplicate items by base slug — multiple variants share the same SkinItem
         var itemsBySlug = new Dictionary<string, SkinItem>(StringComparer.Ordinal);
 
         foreach (var dto in raw)
@@ -102,8 +100,6 @@ public sealed class CS2SteamWebApiFetcher : IScheduledFetcher
                     out var statTrak,
                     out var souvenir))
             {
-                // Dopplers with phase info and non-weapon items (knives without wear, gloves, agents, etc.)
-                // are silently skipped here. Doppler phase handling is a known gap — see GitHub issue.
                 continue;
             }
 
@@ -111,7 +107,6 @@ public sealed class CS2SteamWebApiFetcher : IScheduledFetcher
             var variantSlug = CS2SlugBuilder.BuildVariantSlug(weapon, skinName, wear, statTrak, souvenir);
             var now = DateTime.UtcNow;
 
-            // Upsert SkinItem — one per base slug
             if (!itemsBySlug.TryGetValue(baseSlug, out var item))
             {
                 item = new SkinItem
@@ -149,12 +144,8 @@ public sealed class CS2SteamWebApiFetcher : IScheduledFetcher
 
             variants.Add(variant);
 
-            // --- Prices ---
-
-            AddPrice(prices, variant, Sources.SteamWebApi, PriceTypes.LowestListing, dto.PriceLatest, volume: null,
-                now);
-            AddPrice(prices, variant, Sources.SteamWebApi, PriceTypes.LastSold, dto.PriceLatestSell,
-                volume: dto.Sold24h, now);
+            AddPrice(prices, variant, Sources.SteamWebApi, PriceTypes.LowestListing, dto.PriceLatest, volume: null, now);
+            AddPrice(prices, variant, Sources.SteamWebApi, PriceTypes.LastSold, dto.PriceLatestSell, volume: dto.Sold24h, now);
             AddPrice(prices, variant, Sources.SteamWebApi, PriceTypes.BuyOrder, dto.BuyOrderPrice, volume: null, now);
             AddPrice(prices, variant, Sources.SteamWebApi, PriceTypes.LowestMarket, dto.PriceReal, volume: null, now);
         }

@@ -9,9 +9,11 @@ using Skindexer.Api.Data;
 using Skindexer.Api.Data.Repositories;
 using Skindexer.Api.Features;
 using Skindexer.Api.Features.Enrichment;
+using Skindexer.Api.Features.FetchRuns;
 using Skindexer.Api.Tests.Data.Repositories.Fixtures;
 using Skindexer.Contracts.Constants;
 using Skindexer.Contracts.Models;
+using Skindexer.Fetchers.Models;
 using Xunit;
 
 namespace Skindexer.Api.Tests.Data;
@@ -20,6 +22,12 @@ public class FetchResultPersisterTests(PostgresFixture fixture) : IClassFixture<
 {
     private SkindexerDbContext _db = null!;
     private FetchResultPersister _persister = null!;
+
+    private static readonly PersistOptions TestOptions = new()
+    {
+        FetcherId   = "test-fetcher",
+        TriggeredBy = "test"
+    };
 
     public async Task InitializeAsync()
     {
@@ -30,12 +38,13 @@ public class FetchResultPersisterTests(PostgresFixture fixture) : IClassFixture<
         await _db.Variants.ExecuteDeleteAsync();
         await _db.Items.ExecuteDeleteAsync();
 
-        var items = new ItemRepository(_db, fixture.DataSource, NullLogger<ItemRepository>.Instance);
+        var items    = new ItemRepository(_db, fixture.DataSource, NullLogger<ItemRepository>.Instance);
         var variants = new VariantRepository(_db);
-        var prices = new PriceRepository(_db, fixture.DataSource, NullLogger<PriceRepository>.Instance);
-        var enrichers = Enumerable.Empty<IItemEnricher>();
+        var prices   = new PriceRepository(_db, fixture.DataSource, NullLogger<PriceRepository>.Instance);
+        var enrichers  = Enumerable.Empty<IItemEnricher>();
+        var fetchRuns  = new NoOpFetchRunRepository();
 
-        _persister = new FetchResultPersister(items, variants, prices, enrichers, NullLogger<FetchResultPersister>.Instance);
+        _persister = new FetchResultPersister(items, variants, prices, enrichers, fetchRuns, NullLogger<FetchResultPersister>.Instance);
     }
 
     public async Task DisposeAsync()
@@ -44,6 +53,16 @@ public class FetchResultPersisterTests(PostgresFixture fixture) : IClassFixture<
     }
 
     #region Test Data Builders
+
+    private sealed class NoOpFetchRunRepository : IFetchRunRepository
+    {
+        public Task<Guid> StartRunAsync(PersistOptions options, CancellationToken ct = default)
+            => Task.FromResult(Guid.NewGuid());
+        public Task CompleteRunAsync(Guid runId, PersistCounts counts, CancellationToken ct = default)
+            => Task.CompletedTask;
+        public Task FailRunAsync(Guid runId, string? errorMessage, CancellationToken ct = default)
+            => Task.CompletedTask;
+    }
 
     private static SkinItem BuildItem(
         string slug = "ak-47-redline",
@@ -117,7 +136,7 @@ public class FetchResultPersisterTests(PostgresFixture fixture) : IClassFixture<
         var result = BuildCs2ShResult(items, variants, prices);
 
         // Must not throw Npgsql.PostgresException 23503 FK violation
-        await _persister.PersistAsync(result, CancellationToken.None);
+        await _persister.PersistAsync(result, TestOptions, CancellationToken.None);
     }
 
     [Fact]
@@ -133,7 +152,7 @@ public class FetchResultPersisterTests(PostgresFixture fixture) : IClassFixture<
 
         var result = BuildCs2ShResult(items, variants, prices);
 
-        await _persister.PersistAsync(result, CancellationToken.None);
+        await _persister.PersistAsync(result, TestOptions, CancellationToken.None);
 
         var storedPrice = await _db.CurrentPrices.SingleAsync();
         Assert.Equal("ak-47-redline-field-tested", storedPrice.Slug);
@@ -154,7 +173,7 @@ public class FetchResultPersisterTests(PostgresFixture fixture) : IClassFixture<
 
         var result = BuildCs2ShResult(items, variants, prices);
 
-        await _persister.PersistAsync(result, CancellationToken.None);
+        await _persister.PersistAsync(result, TestOptions, CancellationToken.None);
 
         var dbVariant = await _db.Variants.SingleAsync();
         var storedPrice = await _db.CurrentPrices.SingleAsync();
@@ -168,21 +187,21 @@ public class FetchResultPersisterTests(PostgresFixture fixture) : IClassFixture<
     public async Task PersistAsync_CS2ShStyleResult_MultipleVariantsAndPrices_AllPricesLand()
     {
         var item = BuildItem(slug: "karambit-doppler");
-        var baseVariant = BuildVariant(item, "karambit-doppler-factory-new");
-        var phase2Variant = BuildVariant(item, "karambit-doppler-factory-new-p2");
-        var rubyVariant = BuildVariant(item, "karambit-doppler-factory-new-ruby");
+        var baseVariant    = BuildVariant(item, "karambit-doppler-factory-new");
+        var phase2Variant  = BuildVariant(item, "karambit-doppler-factory-new-p2");
+        var rubyVariant    = BuildVariant(item, "karambit-doppler-factory-new-ruby");
 
-        var basePrice = BuildPrice(baseVariant, Sources.CS2ShBuff);
+        var basePrice   = BuildPrice(baseVariant,   Sources.CS2ShBuff);
         var phase2Price = BuildPrice(phase2Variant, Sources.CS2ShBuff);
-        var rubyPrice = BuildPrice(rubyVariant, Sources.CS2ShBuff);
+        var rubyPrice   = BuildPrice(rubyVariant,   Sources.CS2ShBuff);
 
-        var items = new List<SkinItem> { item };
+        var items    = new List<SkinItem> { item };
         var variants = new List<SkinVariant> { baseVariant, phase2Variant, rubyVariant };
-        var prices = new List<SkinPrice> { basePrice, phase2Price, rubyPrice };
+        var prices   = new List<SkinPrice> { basePrice, phase2Price, rubyPrice };
 
         var result = BuildCs2ShResult(items, variants, prices);
 
-        await _persister.PersistAsync(result, CancellationToken.None);
+        await _persister.PersistAsync(result, TestOptions, CancellationToken.None);
 
         var storedPrices = await _db.CurrentPrices.OrderBy(p => p.Slug).ToListAsync();
         Assert.Equal(3, storedPrices.Count);
@@ -194,20 +213,20 @@ public class FetchResultPersisterTests(PostgresFixture fixture) : IClassFixture<
     [Fact]
     public async Task PersistAsync_CS2ShStyleResult_MultipleMarketplaces_AllPricesLand()
     {
-        var item = BuildItem(slug: "ak-47-redline");
+        var item    = BuildItem(slug: "ak-47-redline");
         var variant = BuildVariant(item, "ak-47-redline-field-tested");
 
-        var buffPrice = BuildPrice(variant, Sources.CS2ShBuff);
+        var buffPrice   = BuildPrice(variant, Sources.CS2ShBuff);
         var csfloatPrice = BuildPrice(variant, Sources.CS2ShCsFloat);
-        var steamPrice = BuildPrice(variant, Sources.CS2ShSteam);
+        var steamPrice  = BuildPrice(variant, Sources.CS2ShSteam);
 
-        var items = new List<SkinItem> { item };
+        var items    = new List<SkinItem> { item };
         var variants = new List<SkinVariant> { variant };
-        var prices = new List<SkinPrice> { buffPrice, csfloatPrice, steamPrice };
+        var prices   = new List<SkinPrice> { buffPrice, csfloatPrice, steamPrice };
 
         var result = BuildCs2ShResult(items, variants, prices);
 
-        await _persister.PersistAsync(result, CancellationToken.None);
+        await _persister.PersistAsync(result, TestOptions, CancellationToken.None);
 
         var storedPrices = await _db.CurrentPrices.OrderBy(p => p.Source).ToListAsync();
         Assert.Equal(3, storedPrices.Count);
@@ -232,7 +251,7 @@ public class FetchResultPersisterTests(PostgresFixture fixture) : IClassFixture<
             new List<SkinItem> { item },
             new List<SkinVariant> { variant },
             []);
-        await _persister.PersistAsync(seedResult, CancellationToken.None);
+        await _persister.PersistAsync(seedResult, TestOptions, CancellationToken.None);
 
         // Now run a prices-only fetch — VariantId is Guid.Empty, resolved via slug
         var priceOnly = new SkinPrice
@@ -255,7 +274,7 @@ public class FetchResultPersisterTests(PostgresFixture fixture) : IClassFixture<
             variants: [],
             prices: new List<SkinPrice> { priceOnly });
 
-        await _persister.PersistAsync(pricesOnlyResult, CancellationToken.None);
+        await _persister.PersistAsync(pricesOnlyResult, TestOptions, CancellationToken.None);
 
         var storedPrice = await _db.CurrentPrices
             .SingleAsync(p => p.Source == Sources.Pricempire);
@@ -289,7 +308,7 @@ public class FetchResultPersisterTests(PostgresFixture fixture) : IClassFixture<
             prices: new List<SkinPrice> { priceOnly });
 
         // Must not throw — slug map is empty, persister should log warning and return early
-        await _persister.PersistAsync(result, CancellationToken.None);
+        await _persister.PersistAsync(result, TestOptions, CancellationToken.None);
 
         var count = await _db.CurrentPrices.CountAsync();
         Assert.Equal(0, count);
@@ -306,14 +325,14 @@ public class FetchResultPersisterTests(PostgresFixture fixture) : IClassFixture<
         var variant = BuildVariant(item, "ak-47-redline-field-tested");
         var price = BuildPrice(variant);
 
-        var items = new List<SkinItem> { item };
+        var items    = new List<SkinItem> { item };
         var variants = new List<SkinVariant> { variant };
-        var prices = new List<SkinPrice> { price };
+        var prices   = new List<SkinPrice> { price };
 
         var result = BuildCs2ShResult(items, variants, prices);
 
-        await _persister.PersistAsync(result, CancellationToken.None);
-        await _persister.PersistAsync(result, CancellationToken.None);
+        await _persister.PersistAsync(result, TestOptions, CancellationToken.None);
+        await _persister.PersistAsync(result, TestOptions, CancellationToken.None);
 
         // current_prices is one row per (variant_id, source, price_type)
         var currentCount = await _db.CurrentPrices.CountAsync();

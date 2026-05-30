@@ -1,8 +1,11 @@
+using Cronos;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Skindexer.Fetchers;
 using Skindexer.Fetchers.Interfaces;
+using Skindexer.Fetchers.Models;
 
 namespace Skindexer.Scheduler;
 
@@ -11,18 +14,30 @@ public class FetchScheduler : BackgroundService
     private readonly FetcherRegistry _registry;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<FetchScheduler> _logger;
+    private readonly SchedulerOptions _options;
 
-    // Tracks when each scheduled fetcher last ran, keyed by FetcherId
-    private readonly Dictionary<string, DateTime> _lastRun = new();
+    // Tracks next scheduled run per fetcher, keyed by FetcherId
+    private readonly Dictionary<string, DateTime> _nextRun = new();
 
     public FetchScheduler(
         FetcherRegistry registry,
         IServiceScopeFactory scopeFactory,
-        ILogger<FetchScheduler> logger)
+        ILogger<FetchScheduler> logger,
+        IOptions<SchedulerOptions> options)
     {
         _registry = registry;
         _scopeFactory = scopeFactory;
         _logger = logger;
+        _options = options.Value;
+    }
+
+    private CronExpression GetCron(IScheduledFetcher fetcher)
+    {
+        var expression = _options.Schedules.TryGetValue(fetcher.FetcherId, out var override_)
+            ? override_
+            : fetcher.DefaultCronExpression;
+
+        return CronExpression.Parse(expression);
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -31,30 +46,48 @@ public class FetchScheduler : BackgroundService
             "FetchScheduler started. Scheduled fetchers: [{Scheduled}]",
             string.Join(", ", _registry.Scheduled.Select(f => f.FetcherId)));
 
+        // Seed next run times from cron
+        var now = DateTime.UtcNow;
+        foreach (var fetcher in _registry.Scheduled)
+        {
+            var next = GetCron(fetcher).GetNextOccurrence(now, TimeZoneInfo.Utc);
+            if (next.HasValue)
+                _nextRun[fetcher.FetcherId] = next.Value;
+        }
+
+        // Optionally run all fetchers immediately on startup
+        if (_options.FetchOnStartup)
+        {
+            _logger.LogInformation("FetchOnStartup enabled — running all fetchers now.");
+            foreach (var fetcher in _registry.Scheduled)
+                _ = RunFetcherAsync(fetcher, FetchRunTriggers.Startup, stoppingToken);
+        }
+
         while (!stoppingToken.IsCancellationRequested)
         {
-            var now = DateTime.UtcNow;
+            now = DateTime.UtcNow;
 
             foreach (var fetcher in _registry.Scheduled)
             {
-                var isDue = !_lastRun.TryGetValue(fetcher.FetcherId, out var last)
-                    || (now - last) >= fetcher.PollingInterval;
+                if (!_nextRun.TryGetValue(fetcher.FetcherId, out var next) || now < next)
+                    continue;
 
-                if (!isDue) continue;
+                _ = RunFetcherAsync(fetcher, FetchRunTriggers.Scheduler, stoppingToken);
 
-                // Fire and forget per fetcher — one failing doesn't block others
-                _ = RunFetcherAsync(fetcher, stoppingToken);
-                _lastRun[fetcher.FetcherId] = now;
+                // Schedule next occurrence
+                var nextOccurrence = GetCron(fetcher).GetNextOccurrence(now, TimeZoneInfo.Utc);
+                if (nextOccurrence.HasValue)
+                    _nextRun[fetcher.FetcherId] = nextOccurrence.Value;
             }
 
-            // Check every 30 seconds whether any fetcher is due
+            // Check every 30 seconds
             await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken);
         }
     }
 
     // Called by the scheduler loop for IScheduledFetcher
     // TODO: expose publicly so the API can call this for IManualFetcher triggers
-    internal async Task RunFetcherAsync(IGameFetcher fetcher, CancellationToken ct)
+    internal async Task RunFetcherAsync(IGameFetcher fetcher, string triggeredBy, CancellationToken ct)
     {
         _logger.LogInformation("Running fetcher {FetcherId}", fetcher.FetcherId);
 
@@ -71,14 +104,16 @@ public class FetchScheduler : BackgroundService
             _logger.LogWarning("Fetcher {FetcherId} completed with warnings: {Warnings}",
                 fetcher.FetcherId, string.Join(", ", result.Warnings));
 
-        // Create a fresh scope per fetch run — persister wraps DbContext, which is scoped
         await using var scope = _scopeFactory.CreateAsyncScope();
         var persister = scope.ServiceProvider.GetRequiredService<IFetchResultPersister>();
-
-        await persister.PersistAsync(result, ct);
+        var counts = await persister.PersistAsync(result, new PersistOptions
+        {
+            FetcherId   = fetcher.FetcherId,
+            TriggeredBy = triggeredBy
+        }, ct);
 
         _logger.LogInformation(
-            "Fetcher {FetcherId} completed. Items: {ItemCount}, Prices: {PriceCount}",
-            fetcher.FetcherId, result.Items.Count, result.Prices.Count);
+            "Fetcher {FetcherId} completed. Items: {Items}, Variants: {Variants}, Prices: {Prices}",
+            fetcher.FetcherId, counts.ItemsUpserted, counts.VariantsUpserted, counts.PricesInserted);
     }
 }

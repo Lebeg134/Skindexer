@@ -13,8 +13,8 @@ using Skindexer.Api.Data;
 namespace Skindexer.Api.Migrations
 {
     [DbContext(typeof(SkindexerDbContext))]
-    [Migration("20260422122444_AddCurrentPrices")]
-    partial class AddCurrentPrices
+    [Migration("20260530172452_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -121,6 +121,64 @@ namespace Skindexer.Api.Migrations
                         .HasDatabaseName("ix_current_prices_game_id");
 
                     b.ToTable("current_prices", (string)null);
+                });
+
+            modelBuilder.Entity("Skindexer.Api.Data.Entities.FetchRunEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasColumnType("text")
+                        .HasColumnName("error_message");
+
+                    b.Property<string>("FetcherId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("fetcher_id");
+
+                    b.Property<DateTime?>("FinishedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("finished_at");
+
+                    b.Property<int?>("ItemsUpserted")
+                        .HasColumnType("integer")
+                        .HasColumnName("items_upserted");
+
+                    b.Property<int?>("PricesInserted")
+                        .HasColumnType("integer")
+                        .HasColumnName("prices_inserted");
+
+                    b.Property<DateTime>("StartedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("started_at");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("status");
+
+                    b.Property<string>("TriggeredBy")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("triggered_by");
+
+                    b.Property<int?>("VariantsUpserted")
+                        .HasColumnType("integer")
+                        .HasColumnName("variants_upserted");
+
+                    b.HasKey("Id")
+                        .HasName("pk_fetch_runs");
+
+                    b.HasIndex("FetcherId", "StartedAt")
+                        .HasDatabaseName("ix_fetch_runs_fetcher_id_started_at");
+
+                    b.ToTable("fetch_runs", (string)null);
                 });
 
             modelBuilder.Entity("Skindexer.Api.Data.Entities.RarityEntity", b =>

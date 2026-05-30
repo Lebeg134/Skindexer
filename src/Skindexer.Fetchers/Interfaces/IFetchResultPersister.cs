@@ -1,4 +1,5 @@
 using Skindexer.Contracts.Models;
+using Skindexer.Fetchers.Models;
 
 namespace Skindexer.Fetchers.Interfaces;
  
@@ -9,5 +10,5 @@ namespace Skindexer.Fetchers.Interfaces;
 /// </summary>
 public interface IFetchResultPersister
 {
-    Task PersistAsync(FetchResult result, CancellationToken ct = default);
+    Task<PersistCounts> PersistAsync(FetchResult result, PersistOptions options,  CancellationToken ct = default);
 }

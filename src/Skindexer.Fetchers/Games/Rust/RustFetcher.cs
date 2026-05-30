@@ -24,7 +24,8 @@ public class RustFetcher : IScheduledFetcher
     public string DisplayName => "Rust";
 
     public bool IsAuthoritativeItemSource { get; } = false;
-    public TimeSpan PollingInterval => TimeSpan.FromMinutes(15);
+    public string DefaultCronExpression => "*/15 * * * *"; // Every 15 minutes
+    
 
     public RustFetcher(HttpClient http, ILogger<RustFetcher> logger)
     {

@@ -1,6 +1,7 @@
 services:
   db:
     image: postgres:16-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_DB: skindexer
       POSTGRES_USER: skindexer
@@ -10,11 +11,16 @@ services:
 
   api:
     image: ghcr.io/lebeg134/skindexer:latest
+    restart: unless-stopped
     environment:
       ConnectionStrings__Default: Host=db;Database=skindexer;Username=skindexer;Password=changeme
 
       # Uncomment and list the fetchers you want active:
       # Fetchers__Enabled: "cs2-bymykel,cs2-steamanalyst,cs2-cs2sh"
+
+      # Optional: override default polling intervals per fetcher (hh:mm:ss)
+      # Fetchers__Schedules__cs2-bymykel: "24:00:00"
+      # Fetchers__Schedules__cs2-steamanalyst: "01:00:00"
 
       # API keys (only needed for fetchers you enabled above):
       # CS2Sh__ApiKey: YOUR_KEY_HERE

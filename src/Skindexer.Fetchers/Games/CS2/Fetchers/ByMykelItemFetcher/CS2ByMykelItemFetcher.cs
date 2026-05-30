@@ -29,10 +29,10 @@ public class CS2ByMykelItemFetcher : IScheduledFetcher
             services.AddSingleton<CS2ByMykelMusicKitMapper>();
         }
     };
-    
+
     private const string GameId = GameIds.CounterStrike;
-    private const string Source = "bymykel";
     private const string BaseUrl = "https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en";
+    private const string Source = "bymykel";
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -45,8 +45,11 @@ public class CS2ByMykelItemFetcher : IScheduledFetcher
     private readonly CS2ByMykelPatchMapper _patchMapper;
     private readonly CS2ByMykelMusicKitMapper _musicKitMapper;
 
-    public CS2ByMykelItemFetcher(HttpClient http, CS2ByMykelSkinMapper skinMapper,
-        CS2ByMykelCollectibleMapper collectibleMapper, CS2ByMykelPatchMapper patchMapper,
+    public CS2ByMykelItemFetcher(
+        HttpClient http, 
+        CS2ByMykelSkinMapper skinMapper,
+        CS2ByMykelCollectibleMapper collectibleMapper, 
+        CS2ByMykelPatchMapper patchMapper,
         CS2ByMykelMusicKitMapper musicKitMapper)
     {
         _http = http;
@@ -58,11 +61,10 @@ public class CS2ByMykelItemFetcher : IScheduledFetcher
 
     public string FetcherId => Descriptor.FetcherId;
     public string DisplayName => "CSGO-API (ByMykel)";
-    
-    public bool IsAuthoritativeItemSource { get; } = true;
+    public string DefaultCronExpression => "0 1 * * *"; // 1:00 AM daily
+    public bool IsAuthoritativeItemSource => true;
 
-    // TODO: make PollingInterval configurable via appsettings.json (CS2ByMykelItemFetcherOptions)
-    public TimeSpan PollingInterval => TimeSpan.FromDays(1);
+    // --- Core Execution ---
 
     public async Task<FetchResult> FetchAsync(CancellationToken ct = default)
     {
@@ -89,6 +91,7 @@ public class CS2ByMykelItemFetcher : IScheduledFetcher
         var musicKitResult = _musicKitMapper.Map(musicKitDtos, warnings);
         items.AddRange(musicKitResult.Items);
         variants.AddRange(musicKitResult.Variants);
+
         await FetchEndpoint<ByMykelSticker>("stickers.json", MapSticker, items, warnings, ct);
         await FetchEndpoint<ByMykelKeychain>("keychains.json", MapKeychain, items, warnings, ct);
         await FetchEndpoint<ByMykelCrate>("crates.json", MapCrate, items, warnings, ct);
@@ -111,23 +114,25 @@ public class CS2ByMykelItemFetcher : IScheduledFetcher
             .ToList();
 
         warnings.AddRange(dupeVariants.Select(slug => $"Duplicate variant slug detected: {slug}"));
-            
-            
+
         return warnings.Count > 0
             ? FetchResult.Partial(GameId, Source, items, variants, [], warnings, IsAuthoritativeItemSource)
             : FetchResult.Success(GameId, Source, items, variants, [], IsAuthoritativeItemSource);
     }
 
+    // --- Subsystem Communication & Mapping Helpers ---
 
     private async Task<IReadOnlyList<TDto>> FetchDtosAsync<TDto>(
-        string endpoint, List<string> warnings, CancellationToken ct)
+        string endpoint, 
+        List<string> warnings, 
+        CancellationToken ct)
     {
         try
         {
-            var dtos = await _http.GetFromJsonAsync<List<TDto>>(
-                $"{BaseUrl}/{endpoint}", JsonOptions, ct);
+            var dtos = await _http.GetFromJsonAsync<List<TDto>>($"{BaseUrl}/{endpoint}", JsonOptions, ct);
+            if (dtos is not null) 
+                return dtos;
 
-            if (dtos is not null) return dtos;
             warnings.Add($"{endpoint}: received null response");
             return [];
         }
@@ -138,8 +143,6 @@ public class CS2ByMykelItemFetcher : IScheduledFetcher
         }
     }
 
-    // --- Endpoint fetching ---
-
     private async Task FetchEndpoint<TDto>(
         string endpoint,
         Func<TDto, SkinItem?> mapper,
@@ -149,9 +152,7 @@ public class CS2ByMykelItemFetcher : IScheduledFetcher
     {
         try
         {
-            var dtos = await _http.GetFromJsonAsync<List<TDto>>(
-                $"{BaseUrl}/{endpoint}", JsonOptions, ct);
-
+            var dtos = await _http.GetFromJsonAsync<List<TDto>>($"{BaseUrl}/{endpoint}", JsonOptions, ct);
             if (dtos is null)
             {
                 warnings.Add($"{endpoint}: received null response");
@@ -177,8 +178,6 @@ public class CS2ByMykelItemFetcher : IScheduledFetcher
             warnings.Add($"{endpoint}: fetch failed — {ex.Message}");
         }
     }
-
-    // --- Mappers ---
 
     private SkinItem? MapSticker(ByMykelSticker dto)
     {
@@ -236,7 +235,7 @@ public class CS2ByMykelItemFetcher : IScheduledFetcher
 
         var metadata = new CS2KeyMetadata
         {
-            Rarity = null, // keys have no rarity field in the API
+            Rarity = null,
             RarityColor = null,
         };
 
@@ -272,8 +271,6 @@ public class CS2ByMykelItemFetcher : IScheduledFetcher
 
         return BuildItem(CS2ItemTypes.Graffiti, dto.Name, dto.Image, dto.MarketHashName is not null, metadata.ToDictionary());
     }
-
-    // --- Shared builder for non-skin items ---
 
     private static SkinItem BuildItem(
         string type,

@@ -1,8 +1,10 @@
 using Skindexer.Api.Features.Variants;
 using Skindexer.Contracts.Constants;
+using Skindexer.Fetchers;
 using Skindexer.Fetchers.Games.CS2.Fetchers;
 using Skindexer.Fetchers.Games.CS2.Fetchers.KaggleFetcher;
 using Skindexer.Fetchers.Interfaces;
+using Skindexer.Fetchers.Models;
 
 namespace Skindexer.Api.Features.Import;
 
@@ -21,23 +23,24 @@ public static class CS2KaggleImportEndpoint
             {
                 await using var scope = scopeFactory.CreateAsyncScope();
 
-                var fetcher = scope.ServiceProvider.GetRequiredService<CS2KagglePriceFetcher>();
-                var persister = scope.ServiceProvider.GetRequiredService<IFetchResultPersister>();
+                var fetcher     = scope.ServiceProvider.GetRequiredService<CS2KagglePriceFetcher>();
+                var persister   = scope.ServiceProvider.GetRequiredService<IFetchResultPersister>();
                 var variantRepo = scope.ServiceProvider.GetRequiredService<IVariantRepository>();
 
                 var slugMap = await variantRepo.GetSlugToVariantIdMapAsync(GameIds.CounterStrike, CancellationToken.None);
-                var result = await fetcher.FetchAsync(new CS2KaggleFetchContext { VariantSlugMap = slugMap }, CancellationToken.None);
+                var result  = await fetcher.FetchAsync(new CS2KaggleFetchContext { VariantSlugMap = slugMap }, CancellationToken.None);
 
-
-                 if (!result.IsSuccess)
+                if (!result.IsSuccess)
                 {
-                    logger.LogError(
-                        "CS2 Kaggle fetch failed: {Error}",
-                        result.ErrorMessage);
+                    logger.LogError("CS2 Kaggle fetch failed: {Error}", result.ErrorMessage);
                     return;
                 }
 
-                await persister.PersistAsync(result);
+                await persister.PersistAsync(result, new PersistOptions
+                {
+                    FetcherId   = CS2KagglePriceFetcher.Descriptor.FetcherId,
+                    TriggeredBy = FetchRunTriggers.Manual
+                }, CancellationToken.None);
             }, CancellationToken.None);
 
             return Results.Accepted();

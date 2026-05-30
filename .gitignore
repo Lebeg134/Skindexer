@@ -15,4 +15,6 @@ obj/
 .DS_Store
 Thumbs.db
 
+# Dev
 src/Skindexer.Api/appsettings.Development.json
+docker-compose.override.yml
