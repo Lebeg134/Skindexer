@@ -13,7 +13,7 @@ using Skindexer.Api.Data;
 namespace Skindexer.Api.Migrations
 {
     [DbContext(typeof(SkindexerDbContext))]
-    [Migration("20260530172452_InitialCreate")]
+    [Migration("20260530223312_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
