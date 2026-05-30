@@ -1,7 +1,6 @@
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
-COPY skindexer.sln ./
 COPY src/Skindexer.Api/Skindexer.Api.csproj src/Skindexer.Api/
 COPY src/Skindexer.Contracts/Skindexer.Contracts.csproj src/Skindexer.Contracts/
 COPY src/Skindexer.Fetchers/Skindexer.Fetchers.csproj src/Skindexer.Fetchers/
