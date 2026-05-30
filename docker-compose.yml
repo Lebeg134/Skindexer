@@ -4,19 +4,22 @@ services:
     environment:
       POSTGRES_DB: skindexer
       POSTGRES_USER: skindexer
-      POSTGRES_PASSWORD: skindexer_dev
-    ports:
-      - "5432:5432"
+      POSTGRES_PASSWORD: changeme
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
   api:
-    build:
-      context: .
-      dockerfile: src/Skindexer.Api/Dockerfile
+    image: ghcr.io/lebeg134/skindexer:latest
     environment:
-      ASPNETCORE_ENVIRONMENT: Development
-      ConnectionStrings__Default: Host=db;Database=skindexer;Username=skindexer;Password=skindexer_dev
+      ConnectionStrings__Default: Host=db;Database=skindexer;Username=skindexer;Password=changeme
+
+      # Uncomment and list the fetchers you want active:
+      # Fetchers__Enabled: "cs2-bymykel,cs2-steamanalyst,cs2-cs2sh"
+
+      # API keys (only needed for fetchers you enabled above):
+      # CS2Sh__ApiKey: YOUR_KEY_HERE
+      # Pricempire__ApiKey: YOUR_KEY_HERE
+      # SteamWebApi__ApiKey: YOUR_KEY_HERE
     ports:
       - "8080:8080"
     depends_on:

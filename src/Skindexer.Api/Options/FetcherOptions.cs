@@ -4,5 +4,14 @@ public class FetcherOptions
 {
     public const string SectionName = "Fetchers";
 
-    public List<string> Enabled { get; set; } = [];
+    private string _enabled = string.Empty;
+
+    public string Enabled
+    {
+        get => _enabled;
+        set => _enabled = value ?? string.Empty;
+    }
+
+    public IReadOnlyList<string> EnabledFetchers =>
+        _enabled.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 }

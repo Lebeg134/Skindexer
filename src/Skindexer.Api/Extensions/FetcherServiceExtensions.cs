@@ -37,7 +37,7 @@ public static class FetcherServiceExtensions
             d => d.FetcherId,
             StringComparer.OrdinalIgnoreCase);
 
-        foreach (var fetcherId in options.Enabled)
+        foreach (var fetcherId in options.EnabledFetchers)
         {
             if (index.TryGetValue(fetcherId, out var descriptor))
             {
