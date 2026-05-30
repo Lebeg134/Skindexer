@@ -24,8 +24,8 @@ DB_NAME="skindexer"
 DB_USER="skindexer"
 FETCHER_ID="cs2-bymykel"
 SEED_URL="https://raw.githubusercontent.com/Lebeg134/Skindexer/main/sql/seeds/cs_rarity_order.sql"
-POLL_INTERVAL=10   # seconds between fetch_runs checks
-TIMEOUT=600        # max seconds to wait for ByMykel (10 minutes)
+POLL_INTERVAL=10
+TIMEOUT=600
 
 # --- Colors ------------------------------------------------------------------
 GREEN='\033[0;32m'
@@ -36,6 +36,9 @@ NC='\033[0m'
 info()  { echo -e "${GREEN}[setup-cs2]${NC} $*"; }
 warn()  { echo -e "${YELLOW}[setup-cs2]${NC} $*"; }
 error() { echo -e "${RED}[setup-cs2]${NC} $*" >&2; }
+
+# --- Trap: catch unexpected exits --------------------------------------------
+trap 'error "Script exited unexpectedly at line $LINENO. Check output above for clues."' ERR
 
 # --- Preflight ---------------------------------------------------------------
 info "Running preflight checks..."
@@ -72,11 +75,18 @@ wait_for_db() {
     info "DB is ready."
 }
 
+# --- Helper: is DB reachable -------------------------------------------------
+db_is_reachable() {
+    docker compose exec -T "$DB_SERVICE" pg_isready -U "$DB_USER" -d "$DB_NAME" &>/dev/null
+}
+
 # --- Check if ByMykel already ran --------------------------------------------
 STACK_WAS_RUNNING=false
 NEED_FETCH=true
+STARTED_STACK=false
 
-# Check if stack is already up
+info "Checking if ByMykel has already run..."
+
 if docker compose ps --status running 2>/dev/null | grep -q "$DB_SERVICE"; then
     STACK_WAS_RUNNING=true
     wait_for_db
@@ -88,12 +98,14 @@ if docker compose ps --status running 2>/dev/null | grep -q "$DB_SERVICE"; then
     if [ "${EXISTING:-0}" -gt 0 ]; then
         info "ByMykel has already run successfully — skipping fetch."
         NEED_FETCH=false
+    else
+        info "No successful ByMykel run found — fetch needed."
     fi
+else
+    info "Stack is not running — fetch needed."
 fi
 
 # --- Run ByMykel if needed ---------------------------------------------------
-STARTED_STACK=false
-
 if [ "$NEED_FETCH" = true ]; then
     info "Starting stack with ByMykel fetch enabled..."
 
@@ -102,7 +114,7 @@ if [ "$NEED_FETCH" = true ]; then
     docker compose up -d
 
     STARTED_STACK=true
-    wait_for_db || { docker compose down; exit 1; }
+    wait_for_db || { error "DB failed to become ready. Bringing stack down."; docker compose down; exit 1; }
 
     info "Waiting for ByMykel fetch to complete (timeout: ${TIMEOUT}s)..."
 
@@ -133,19 +145,19 @@ if [ "$NEED_FETCH" = true ]; then
     done
 fi
 
-# --- Ensure stack is up for seed step ----------------------------------------
-if [ "$STACK_WAS_RUNNING" = false ] && [ "$STARTED_STACK" = false ]; then
+# --- Ensure DB is reachable for seed step ------------------------------------
+if ! db_is_reachable; then
     info "Starting stack for seed step..."
     docker compose up -d
     STARTED_STACK=true
-    wait_for_db || { docker compose down; exit 1; }
+    wait_for_db || { error "DB failed to become ready for seed step."; docker compose down; exit 1; }
 fi
 
 # --- Apply rarity seed -------------------------------------------------------
 info "Fetching CS2 rarity order seed..."
 SEED_SQL=$(curl -fsSL "$SEED_URL") || {
     error "Failed to download seed file from GitHub."
-    [ "$STARTED_STACK" = true ] && docker compose down
+    [ "$STARTED_STACK" = true ] && [ "$STACK_WAS_RUNNING" = false ] && docker compose down
     exit 1
 }
 
@@ -154,12 +166,14 @@ echo "$SEED_SQL" | docker compose exec -T "$DB_SERVICE" psql -U "$DB_USER" -d "$
 info "Rarity seed applied."
 
 # --- Verify ------------------------------------------------------------------
+info "Verifying rarity seed..."
 RARITY_COUNT=$(docker compose exec -T "$DB_SERVICE" psql -U "$DB_USER" -d "$DB_NAME" -t -c \
     "SELECT COUNT(*) FROM rarities r JOIN rarity_groups rg ON rg.id = r.rarity_group_id WHERE rg.game_id = 'cs2' AND r.\"order\" IS NOT NULL;" \
     2>/dev/null | tr -d '[:space:]')
 
 if [ -z "$RARITY_COUNT" ] || [ "$RARITY_COUNT" -eq 0 ]; then
-    warn "Could not verify rarity rows — you may want to check manually."
+    error "Rarity seed verification failed — no ordered rarity rows found. Check manually."
+    exit 1
 else
     info "Verified: $RARITY_COUNT CS2 rarity rows have ordering set."
 fi
