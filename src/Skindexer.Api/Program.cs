@@ -79,4 +79,12 @@ logger.LogInformation(
     string.Join(", ", registry.Manual.Select(f => f.FetcherId)),
     string.Join(", ", registry.FileBased.Select(f => f.FetcherId)));
 
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<SkindexerDbContext>();
+    await db.Database.MigrateAsync();
+}
+
+app.Run();
+
 app.Run();

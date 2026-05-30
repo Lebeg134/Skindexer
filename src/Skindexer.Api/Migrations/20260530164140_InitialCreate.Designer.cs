@@ -13,8 +13,8 @@ using Skindexer.Api.Data;
 namespace Skindexer.Api.Migrations
 {
     [DbContext(typeof(SkindexerDbContext))]
-    [Migration("20260422122444_AddCurrentPrices")]
-    partial class AddCurrentPrices
+    [Migration("20260530164140_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
