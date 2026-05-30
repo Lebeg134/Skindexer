@@ -28,7 +28,6 @@ services.AddHostedService<FetchScheduler>();
 
 services.Configure<SchedulerOptions>(configuration.GetSection(SchedulerOptions.SectionName));
 
-
 var connectionString = builder.Configuration.GetConnectionString("Default")!;
 
 var dataSource = new NpgsqlDataSourceBuilder(connectionString)
@@ -74,6 +73,22 @@ GetVariantsEndpoint.MapEndpoint(app);
 
 CS2KaggleImportEndpoint.MapEndpoint(app);
 
+// Migrate before anything else starts — failure is fatal.
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<SkindexerDbContext>();
+    var startupLogger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    try
+    {
+        await db.Database.MigrateAsync();
+    }
+    catch (Exception ex)
+    {
+        startupLogger.LogCritical(ex, "Database migration failed. Shutting down.");
+        throw;
+    }
+}
+
 var registry = app.Services.GetRequiredService<FetcherRegistry>();
 var logger = app.Services.GetRequiredService<ILogger<Program>>();
 
@@ -82,11 +97,5 @@ logger.LogInformation(
     string.Join(", ", registry.Scheduled.Select(f => f.FetcherId)),
     string.Join(", ", registry.Manual.Select(f => f.FetcherId)),
     string.Join(", ", registry.FileBased.Select(f => f.FetcherId)));
-
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<SkindexerDbContext>();
-    await db.Database.MigrateAsync();
-}
 
 app.Run();
