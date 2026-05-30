@@ -4,8 +4,10 @@ using Skindexer.Api.Features.Enrichment;
 using Skindexer.Api.Features.Items;
 using Skindexer.Api.Features.Prices;
 using Skindexer.Api.Features.Variants;
+using Skindexer.Api.Features.FetchRuns;
 using Skindexer.Contracts.Models;
 using Skindexer.Fetchers.Interfaces;
+using Skindexer.Fetchers.Models;
 
 namespace Skindexer.Api.Features;
 
@@ -15,6 +17,7 @@ public class FetchResultPersister : IFetchResultPersister
     private readonly IVariantRepository _variants;
     private readonly IPriceRepository _prices;
     private readonly IEnumerable<IItemEnricher> _enrichers;
+    private readonly IFetchRunRepository _fetchRuns;
     private readonly ILogger<FetchResultPersister> _logger;
 
     public FetchResultPersister(
@@ -22,35 +25,51 @@ public class FetchResultPersister : IFetchResultPersister
         IVariantRepository variants,
         IPriceRepository prices,
         IEnumerable<IItemEnricher> enrichers,
+        IFetchRunRepository fetchRuns,
         ILogger<FetchResultPersister> logger)
     {
         _items = items;
         _variants = variants;
         _prices = prices;
         _enrichers = enrichers;
+        _fetchRuns = fetchRuns;
         _logger = logger;
     }
 
-    public async Task PersistAsync(FetchResult result, CancellationToken ct = default)
+    public async Task<PersistCounts> PersistAsync(FetchResult result, PersistOptions options, CancellationToken ct = default)
     {
-        await PersistItemsAsync(result, ct);
-        await PersistVariantsAsync(result, ct);
-        await PersistPricesAsync(result, ct);
-        await EnrichAsync(result.GameId, ct);
+        var runId = await _fetchRuns.StartRunAsync(options, ct);
+
+        try
+        {
+            var itemsUpserted    = await PersistItemsAsync(result, ct);
+            var variantsUpserted = await PersistVariantsAsync(result, ct);
+            var pricesInserted   = await PersistPricesAsync(result, ct);
+            await EnrichAsync(result.GameId, ct);
+
+            var counts = new PersistCounts(itemsUpserted, variantsUpserted, pricesInserted);
+            await _fetchRuns.CompleteRunAsync(runId, counts, ct);
+            return counts;
+        }
+        catch (Exception ex)
+        {
+            await _fetchRuns.FailRunAsync(runId, ex.Message, ct);
+            throw;
+        }
     }
 
     // -------------------------------------------------------------------------
     // Items
     // -------------------------------------------------------------------------
-    private async Task PersistItemsAsync(FetchResult result, CancellationToken ct)
+    private async Task<int> PersistItemsAsync(FetchResult result, CancellationToken ct)
     {
-        if (result.Items.Count == 0) return;
+        if (result.Items.Count == 0) return 0;
 
         if (result.IsAuthoritativeItemSource)
         {
             // ByMykel — full upsert, metadata overwrite allowed
             await _items.UpsertItemsAsync(result.Items, ct);
-            return;
+            return result.Items.Count;
         }
 
         // Non-authoritative source (cs2.sh etc.) — only insert genuinely new items,
@@ -62,15 +81,17 @@ public class FetchResultPersister : IFetchResultPersister
 
         if (newItems.Count > 0)
             await _items.UpsertItemsAsync(newItems, ct);
+
+        return newItems.Count;
     }
 
     // -------------------------------------------------------------------------
     // Variants
     // -------------------------------------------------------------------------
 
-    private async Task PersistVariantsAsync(FetchResult result, CancellationToken ct)
+    private async Task<int> PersistVariantsAsync(FetchResult result, CancellationToken ct)
     {
-        if (result.Variants.Count == 0) return;
+        if (result.Variants.Count == 0) return 0;
 
         _logger.LogInformation(
             "Persisting {Count} variants for {GameId} from {Source}",
@@ -115,15 +136,17 @@ public class FetchResultPersister : IFetchResultPersister
                 "Upserted {Count} variants for {GameId} ({Unresolved} dropped)",
                 remapped.Count, result.GameId, unresolved.Count);
         }
+
+        return remapped.Count;
     }
 
     // -------------------------------------------------------------------------
     // Prices
     // -------------------------------------------------------------------------
 
-    private async Task PersistPricesAsync(FetchResult result, CancellationToken ct)
+    private async Task<int> PersistPricesAsync(FetchResult result, CancellationToken ct)
     {
-        if (result.Prices.Count == 0) return;
+        if (result.Prices.Count == 0) return 0;
 
         _logger.LogInformation(
             "Persisting {Count} prices for {GameId} from {Source}",
@@ -136,7 +159,7 @@ public class FetchResultPersister : IFetchResultPersister
             _logger.LogWarning(
                 "Variant slug map is empty for {GameId} — variants may not have been seeded yet. Skipping price write.",
                 result.GameId);
-            return;
+            return 0;
         }
 
         var resolved = new List<SkinPrice>(result.Prices.Count);
@@ -177,7 +200,7 @@ public class FetchResultPersister : IFetchResultPersister
             _logger.LogWarning(
                 "No resolvable prices for {GameId} after slug resolution. Nothing written.",
                 result.GameId);
-            return;
+            return 0;
         }
 
         await WritePricesInBatchesAsync(result.GameId, resolved, ct);
@@ -185,6 +208,8 @@ public class FetchResultPersister : IFetchResultPersister
         _logger.LogInformation(
             "Wrote {Count} prices for {GameId} ({Unresolved} dropped)",
             resolved.Count, result.GameId, unresolved.Count);
+
+        return resolved.Count;
     }
 
     private async Task WritePricesInBatchesAsync(

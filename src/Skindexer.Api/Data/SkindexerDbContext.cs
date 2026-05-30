@@ -14,6 +14,7 @@ public class SkindexerDbContext : DbContext
     public DbSet<CollectionEntity> Collections => Set<CollectionEntity>();
     public DbSet<RarityEntity> Rarities => Set<RarityEntity>();
     public DbSet<RarityGroupEntity> RarityGroups => Set<RarityGroupEntity>();
+    public DbSet<FetchRunEntity> FetchRuns => Set<FetchRunEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

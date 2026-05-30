@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Skindexer.Fetchers;
 using Skindexer.Fetchers.Interfaces;
+using Skindexer.Fetchers.Models;
 
 namespace Skindexer.Scheduler;
 
@@ -59,7 +60,7 @@ public class FetchScheduler : BackgroundService
         {
             _logger.LogInformation("FetchOnStartup enabled — running all fetchers now.");
             foreach (var fetcher in _registry.Scheduled)
-                _ = RunFetcherAsync(fetcher, stoppingToken);
+                _ = RunFetcherAsync(fetcher, FetchRunTriggers.Startup, stoppingToken);
         }
 
         while (!stoppingToken.IsCancellationRequested)
@@ -71,7 +72,7 @@ public class FetchScheduler : BackgroundService
                 if (!_nextRun.TryGetValue(fetcher.FetcherId, out var next) || now < next)
                     continue;
 
-                _ = RunFetcherAsync(fetcher, stoppingToken);
+                _ = RunFetcherAsync(fetcher, FetchRunTriggers.Scheduler, stoppingToken);
 
                 // Schedule next occurrence
                 var nextOccurrence = GetCron(fetcher).GetNextOccurrence(now, TimeZoneInfo.Utc);
@@ -86,7 +87,7 @@ public class FetchScheduler : BackgroundService
 
     // Called by the scheduler loop for IScheduledFetcher
     // TODO: expose publicly so the API can call this for IManualFetcher triggers
-    internal async Task RunFetcherAsync(IGameFetcher fetcher, CancellationToken ct)
+    internal async Task RunFetcherAsync(IGameFetcher fetcher, string triggeredBy, CancellationToken ct)
     {
         _logger.LogInformation("Running fetcher {FetcherId}", fetcher.FetcherId);
 
@@ -105,11 +106,14 @@ public class FetchScheduler : BackgroundService
 
         await using var scope = _scopeFactory.CreateAsyncScope();
         var persister = scope.ServiceProvider.GetRequiredService<IFetchResultPersister>();
-
-        await persister.PersistAsync(result, ct);
+        var counts = await persister.PersistAsync(result, new PersistOptions
+        {
+            FetcherId   = fetcher.FetcherId,
+            TriggeredBy = triggeredBy
+        }, ct);
 
         _logger.LogInformation(
-            "Fetcher {FetcherId} completed. Items: {ItemCount}, Prices: {PriceCount}",
-            fetcher.FetcherId, result.Items.Count, result.Prices.Count);
+            "Fetcher {FetcherId} completed. Items: {Items}, Variants: {Variants}, Prices: {Prices}",
+            fetcher.FetcherId, counts.ItemsUpserted, counts.VariantsUpserted, counts.PricesInserted);
     }
 }

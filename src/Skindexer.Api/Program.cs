@@ -7,6 +7,7 @@ using Skindexer.Api.Extensions;
 using Skindexer.Api.Features;
 using Skindexer.Api.Features.Collections;
 using Skindexer.Api.Features.Enrichment;
+using Skindexer.Api.Features.FetchRuns;
 using Skindexer.Api.Features.Import;
 using Skindexer.Api.Features.Items;
 using Skindexer.Api.Features.Prices;
@@ -47,6 +48,7 @@ services.AddScoped<ICollectionRepository, CollectionRepository>();
 services.AddScoped<IRarityRepository, RarityRepository>();
 services.AddScoped<IRarityGroupRepository, RarityGroupRepository>();
 services.AddScoped<IVariantRepository, VariantRepository>();
+services.AddScoped<IFetchRunRepository, FetchRunRepository>();
 
 services.AddScoped<IFetchResultPersister, FetchResultPersister>();
 services.AddScoped<IItemEnricher, CS2ItemEnricher>();
