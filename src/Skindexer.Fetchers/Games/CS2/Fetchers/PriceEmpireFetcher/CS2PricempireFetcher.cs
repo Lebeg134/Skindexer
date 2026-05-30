@@ -12,29 +12,9 @@ namespace Skindexer.Fetchers.Games.CS2.Fetchers.PriceEmpireFetcher;
 
 /// <summary>
 /// Fetches live CS2 skin prices from Pricempire's bulk endpoint.
-/// Implements IScheduledFetcher — runs daily on the FetchScheduler cycle.
-///
-/// Endpoint: GET https://api.pricempire.com/v4/paid/items/prices
-///   ?app_id=730
-///   &amp;sources=buff163,steam,dmarket,...
-///   &amp;currency=USD
-///
-/// Auth: Bearer token from config key "Pricempire:ApiKey".
-///
-/// Prices-only fetcher: Items and Variants are always empty.
-/// Item catalog comes from CS2ByMykelItemFetcher.
-///
-/// Slug resolution: market_hash_name is parsed by CS2MarketHashNameParser
-/// then built into a canonical slug via CS2SlugBuilder.BuildVariantSlug.
-/// This matches the slug format already in the database from Kaggle import.
-/// VariantId is left as Guid.Empty — FetchResultPersister resolves it via slug map.
 /// </summary>
 public sealed class CS2PricempireFetcher : IScheduledFetcher
 {
-    // -------------------------------------------------------------------------
-    // IGameFetcher / IScheduledFetcher
-    // -------------------------------------------------------------------------
-    
     public static readonly FetcherDescriptor Descriptor = new()
     {
         FetcherId = "cs2-pricempire",
@@ -45,20 +25,11 @@ public sealed class CS2PricempireFetcher : IScheduledFetcher
         }
     };
 
-    public string FetcherId    => Descriptor.FetcherId;
-    public string DisplayName  => "CS2 Pricempire Price Fetcher";
-    public bool IsAuthoritativeItemSource { get; } = false;
-    public string DefaultCronExpression => "0 1 * * *"; // 1:00 AM daily
-
-    private const string BaseUrl  = "https://api.pricempire.com";
-    private const int    AppId    = 730;
+    private const string GameId = GameIds.CounterStrike;
+    private const string BaseUrl = "https://api.pricempire.com";
+    private const int AppId = 730;
     private const string Currency = "USD";
 
-    /// <summary>
-    /// Provider keys to request from Pricempire.
-    /// Each becomes a distinct SkinPrice.Source via PricempireSources.FromProviderKey.
-    /// Add new providers here as needed — unknown keys are stored with an auto-prefix.
-    /// </summary>
     private static readonly string[] DefaultSources =
     [
         "buff163",
@@ -70,10 +41,6 @@ public sealed class CS2PricempireFetcher : IScheduledFetcher
         "waxpeer",
     ];
 
-    // -------------------------------------------------------------------------
-    // Dependencies
-    // -------------------------------------------------------------------------
-
     private readonly HttpClient _http;
     private readonly ILogger<CS2PricempireFetcher> _logger;
     private readonly string _apiKey;
@@ -83,7 +50,7 @@ public sealed class CS2PricempireFetcher : IScheduledFetcher
         IConfiguration configuration,
         ILogger<CS2PricempireFetcher> logger)
     {
-        _http   = httpClientFactory.CreateClient(nameof(CS2PricempireFetcher));
+        _http = httpClientFactory.CreateClient(nameof(CS2PricempireFetcher));
         _logger = logger;
         _apiKey = configuration["Pricempire:ApiKey"]
             ?? throw new InvalidOperationException(
@@ -91,15 +58,17 @@ public sealed class CS2PricempireFetcher : IScheduledFetcher
                 "Add it to appsettings.json or user secrets.");
     }
 
-    // -------------------------------------------------------------------------
-    // IGameFetcher
-    // -------------------------------------------------------------------------
+    public string FetcherId => Descriptor.FetcherId;
+    public string DisplayName => "CS2 Pricempire Price Fetcher";
+    public string DefaultCronExpression => "0 1 * * *"; // 1:00 AM daily
+    public bool IsAuthoritativeItemSource => false;
+
+    // --- Core Execution ---
 
     public async Task<FetchResult> FetchAsync(CancellationToken cancellationToken = default)
     {
         var warnings = new List<string>();
 
-        // --- 1. HTTP fetch ---
         List<PricempireItemDto>? rawItems;
         try
         {
@@ -110,9 +79,9 @@ public sealed class CS2PricempireFetcher : IScheduledFetcher
             _logger.LogError(ex, "[{Fetcher}] HTTP fetch failed", FetcherId);
             return new FetchResult
             {
-                GameId       = "cs2",
-                Source       = Sources.Pricempire,
-                IsSuccess    = false,
+                GameId = GameId,
+                Source = Sources.Pricempire,
+                IsSuccess = false,
                 ErrorMessage = ex.Message,
             };
         }
@@ -123,9 +92,9 @@ public sealed class CS2PricempireFetcher : IScheduledFetcher
             _logger.LogWarning("[{Fetcher}] {Message}", FetcherId, msg);
             return new FetchResult
             {
-                GameId       = "cs2",
-                Source       = Sources.Pricempire,
-                IsSuccess    = false,
+                GameId = GameId,
+                Source = Sources.Pricempire,
+                IsSuccess = false,
                 ErrorMessage = msg,
             };
         }
@@ -134,11 +103,10 @@ public sealed class CS2PricempireFetcher : IScheduledFetcher
             "[{Fetcher}] Received {Count} items from Pricempire API",
             FetcherId, rawItems.Count);
 
-        // --- 2. Map to SkinPrice records ---
-        var prices        = new List<SkinPrice>();
-        int skipped       = 0;
+        var prices = new List<SkinPrice>();
+        int skipped = 0;
         int skippedNoWear = 0;
-        var recordedAt    = DateTime.UtcNow;
+        var recordedAt = DateTime.UtcNow;
 
         foreach (var item in rawItems)
         {
@@ -150,14 +118,11 @@ public sealed class CS2PricempireFetcher : IScheduledFetcher
                     out var isStatTrak,
                     out var isSouvenir))
             {
-                // Items without a wear suffix are valid CS2 items (agents,
-                // keys, music kits, etc.) but are not skin variants — skip silently.
                 skippedNoWear++;
                 continue;
             }
 
-            var slug = CS2SlugBuilder.BuildVariantSlug(
-                weapon, skinName, wear, isStatTrak, isSouvenir);
+            var slug = CS2SlugBuilder.BuildVariantSlug(weapon, skinName, wear, isStatTrak, isSouvenir);
 
             foreach (var priceEntry in item.Prices)
             {
@@ -179,28 +144,25 @@ public sealed class CS2PricempireFetcher : IScheduledFetcher
 
         return new FetchResult
         {
-            GameId    = "cs2",
-            Source    = Sources.Pricempire,
-            Items     = [],
-            Variants  = [],
-            Prices    = prices,
+            GameId = GameId,
+            Source = Sources.Pricempire,
+            Items = [],
+            Variants = [],
+            Prices = prices,
             IsSuccess = true,
-            Warnings  = warnings,
+            Warnings = warnings,
         };
     }
 
-    // -------------------------------------------------------------------------
-    // HTTP
-    // -------------------------------------------------------------------------
+    // --- External Integrations & Price Layout Mappers ---
 
     private async Task<List<PricempireItemDto>?> FetchRawAsync(CancellationToken ct)
     {
         var sources = Uri.EscapeDataString(string.Join(",", DefaultSources));
-        var url     = $"{BaseUrl}/v4/paid/items/prices?app_id={AppId}&sources={sources}&currency={Currency}";
+        var url = $"{BaseUrl}/v4/paid/items/prices?app_id={AppId}&sources={sources}&currency={Currency}";
 
         using var request = new HttpRequestMessage(HttpMethod.Get, url);
-        request.Headers.Authorization =
-            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _apiKey);
+        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _apiKey);
 
         using var response = await _http.SendAsync(request, ct);
         response.EnsureSuccessStatusCode();
@@ -210,15 +172,6 @@ public sealed class CS2PricempireFetcher : IScheduledFetcher
             ct);
     }
 
-    // -------------------------------------------------------------------------
-    // Price expansion
-    // -------------------------------------------------------------------------
-
-    /// <summary>
-    /// Expands one provider entry into one SkinPrice per non-null price field.
-    /// VariantId = Guid.Empty — FetchResultPersister resolves it via the slug map,
-    /// same as CS2KagglePriceFetcher does.
-    /// </summary>
     private static IEnumerable<SkinPrice> ExpandPrices(
         string slug,
         string source,
@@ -227,25 +180,29 @@ public sealed class CS2PricempireFetcher : IScheduledFetcher
     {
         var ts = entry.UpdatedAt ?? recordedAt;
 
-        if (entry.Price   is { } lowest) yield return Make(slug, source, PriceTypes.LowestListing, lowest, entry.Count, ts);
-        if (entry.Avg7    is { } avg7)   yield return Make(slug, source, PriceTypes.Avg7d,          avg7,   null,        ts);
-        if (entry.Avg30   is { } avg30)  yield return Make(slug, source, PriceTypes.Avg30d,         avg30,  null,        ts);
-        if (entry.Median7 is { } med7)   yield return Make(slug, source, PriceTypes.Median7d,       med7,   null,        ts);
-        if (entry.Median30 is { } med30) yield return Make(slug, source, PriceTypes.Median30d,      med30,  null,        ts);
+        if (entry.Price is { } lowest) yield return Make(slug, source, PriceTypes.LowestListing, lowest, entry.Count, ts);
+        if (entry.Avg7 is { } avg7) yield return Make(slug, source, PriceTypes.Avg7d, avg7, null, ts);
+        if (entry.Avg30 is { } avg30) yield return Make(slug, source, PriceTypes.Avg30d, avg30, null, ts);
+        if (entry.Median7 is { } med7) yield return Make(slug, source, PriceTypes.Median7d, med7, null, ts);
+        if (entry.Median30 is { } med30) yield return Make(slug, source, PriceTypes.Median30d, med30, null, ts);
     }
 
     private static SkinPrice Make(
-        string slug, string source, string priceType,
-        decimal price, int? volume, DateTime recordedAt) => new()
+        string slug, 
+        string source, 
+        string priceType,
+        decimal price, 
+        int? volume, 
+        DateTime recordedAt) => new()
     {
-        VariantId  = Guid.Empty,
-        GameId     = "cs2",
-        Slug       = slug,
-        Source     = source,
-        PriceType  = priceType,
-        Price      = price,
-        Currency   = "USD",
-        Volume     = volume,
+        VariantId = Guid.Empty,
+        GameId = GameId,
+        Slug = slug,
+        Source = source,
+        PriceType = priceType,
+        Price = price,
+        Currency = "USD",
+        Volume = volume,
         RecordedAt = recordedAt,
     };
 }
