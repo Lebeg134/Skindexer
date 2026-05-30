@@ -4,6 +4,15 @@
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+
+    <!-- Packaging -->
+    <PackageId>Skindexer.Contracts</PackageId>
+    <Authors>Lebeg134</Authors>
+    <Description>Shared contracts, models, and constants for Skindexer fetchers and consumers.</Description>
+    <RepositoryUrl>https://github.com/Lebeg134/Skindexer</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
 </Project>
