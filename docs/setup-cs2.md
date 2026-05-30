@@ -3,6 +3,36 @@
 This guide covers the required first-run steps for a CS2 deployment of Skindexer.
 These steps are only needed once per fresh database.
 
+## Automated setup (recommended)
+
+A setup script handles everything below automatically. You don't need to clone the repo.
+
+**Step 1** — Configure and start your stack:
+
+```bash
+# edit docker-compose.yml with your fetcher config, then:
+docker compose up -d
+```
+
+**Step 2** — Run the CS2 setup script:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Lebeg134/Skindexer/main/scripts/setup-cs2.sh | bash
+```
+
+The script will handle the ByMykel fetch, apply the rarity seed, and leave the stack ready.
+If ByMykel has already run before, it skips the fetch and just applies the seed.
+
+**Step 3** — Start your stack permanently with your real fetcher config:
+
+```bash
+docker compose up -d
+```
+
+That's it. If the script fails or you'd prefer to run the steps manually, follow the guide below.
+
+---
+
 ## Why this is needed
 
 CS2 item metadata (names, rarities, variants) is seeded by the **ByMykel fetcher**, which pulls
@@ -60,10 +90,10 @@ Monitor progress in the `fetch_runs` table:
 
 ```bash
 docker compose exec db psql -U skindexer -d skindexer -c \
-  "SELECT fetcher_id, triggered_by, started_at, completed_at, status FROM fetch_runs ORDER BY started_at DESC LIMIT 5;"
+  "SELECT fetcher_id, triggered_by, started_at, finished_at, status FROM fetch_runs ORDER BY started_at DESC LIMIT 5;"
 ```
 
-The run is done when `completed_at` is populated and `status` is `completed`.
+The run is done when `finished_at` is populated and `status` is `success`.
 
 ---
 

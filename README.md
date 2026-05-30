@@ -43,8 +43,11 @@ docker compose up -d
 
 The API will be available at `http://localhost:8080`. In development, OpenAPI docs are at `/scalar/v1`.
 
-> **CS2 users:** after first boot, a few manual steps are required to populate item data and rarity ordering.
-> See [docs/setup-cs2.md](docs/setup-cs2.md).
+> **CS2 users:** run the setup script once to seed item data and rarity ordering:
+> ```bash
+> curl -fsSL https://raw.githubusercontent.com/Lebeg134/Skindexer/main/scripts/setup-cs2.sh | bash
+> ```
+> See [docs/setup-cs2.md](docs/setup-cs2.md) for details or manual steps.
 
 ## Configuration
 
@@ -71,7 +74,6 @@ The guide includes an annotated reference implementation and a prompt template d
 - [ ] Price statistics endpoint (24h change, 7d high/low)
 - [ ] Multi-source price comparison
 - [ ] Health and observability endpoint
-- [ ] CSFloat fetcher
 - [ ] Contributor-hosted catalogs (non-tradeable games)
 
 ## License
